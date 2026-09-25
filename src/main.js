@@ -194,8 +194,8 @@ function trainMultiClassSVM(X_train, y_train, C, kernel, gamma, degree = 3, coef
 // =====================================================================
 // 3. USER AUTHENTICATION & SUPABASE SESSION (MỤC VII, VIII, IX)
 // =====================================================================
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'https://fnpjbrhhuhajgekrofzj.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZucGpicmhodWhhamdla3JvZnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMjQ0NDksImV4cCI6MjEwNTgwMDQ0OX0.K6aE0Eol_k6jRi4HUKWshZfRmLjrvbWnm9lZMa60Bzg';
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'https://zivdfypkmalrlgojdlmy.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdmRmeXBrbWFscmxnb2pkbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNDkzNzksImV4cCI6MjEwNTgyNTM3OX0.0we8qj9_F9kQNy3t53ogL77iVe2QAHh3KCVky_cHAf8';
 
 export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabaseClient;
@@ -486,6 +486,19 @@ window.predict = async function() {
   document.getElementById('flowerImage').src = `images/${prediction}.jpg`;
 
   updateLiveSelectionPoint();
+
+  // Đồng bộ thẻ kết quả bên dưới nếu đang hiển thị
+  const inlineCard = document.getElementById('trainingInlineResultCard');
+  if (inlineCard && inlineCard.style.display !== 'none' && currentTrainedSVM) {
+    const k = (document.getElementById('svmKernel')?.value || 'rbf').toLowerCase();
+    const cVal = parseFloat(document.getElementById('cInput')?.value) || 1.0;
+    const gVal = parseFloat(document.getElementById('gammaInput')?.value) || 0.5;
+    const dVal = parseInt(document.getElementById('degreeInput')?.value) || 3;
+    const fXName = FEATURE_NAMES[activeFeatX];
+    const fYName = FEATURE_NAMES[activeFeatY];
+    renderTrainingInlineResult(currentTrainedSVM, k, cVal, gVal, dVal, 96.0, { sl, sw, pl, pw }, fXName, fYName);
+  }
+
   saveUserPrediction(sl, sw, pl, pw, prediction, 'Tương tác trực quan');
 };
 
@@ -693,7 +706,87 @@ window.trainAndRenderBoundary = function() {
     execTime,
     timestamp: new Date().toLocaleTimeString('vi-VN')
   });
+
+  // 7. Hiển thị kết quả phân loại hoa ngay tại chỗ (bên dưới biểu đồ, không cần lướt lên trên)
+  renderTrainingInlineResult(multiSVM, kernel, C, gamma, degree, accuracy, { sl, sw, pl, pw }, featXName, featYName);
 };
+
+function renderTrainingInlineResult(multiSVM, kernel, C, gamma, degree, accuracy, inputs, featXName, featYName) {
+  const container = document.getElementById('trainingInlineResultCard');
+  if (!container) return;
+
+  const currentX = getFeatureValue(activeFeatX);
+  const currentY = getFeatureValue(activeFeatY);
+  const pred2D = multiSVM.predictSample([currentX, currentY]);
+  const predSpecies = SPECIES_NAMES[pred2D.classIndex] || 'setosa';
+
+  let flowerVi = 'Iris Setosa';
+  let flowerTagColor = '#15803d';
+  let flowerTagBg = '#dcfce7';
+  let flowerTagBorder = '#86efac';
+  let flowerTagText = '🌿 Xanh lá (Setosa)';
+
+  if (predSpecies === 'versicolor') {
+    flowerVi = 'Iris Versicolor';
+    flowerTagColor = '#b45309';
+    flowerTagBg = '#fef3c7';
+    flowerTagBorder = '#fcd34d';
+    flowerTagText = '🌼 Vàng hổ phách (Versicolor)';
+  } else if (predSpecies === 'virginica') {
+    flowerVi = 'Iris Virginica';
+    flowerTagColor = '#7e22ce';
+    flowerTagBg = '#f3e8ff';
+    flowerTagBorder = '#d8b4fe';
+    flowerTagText = '🌸 Tím mộng mơ (Virginica)';
+  }
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 2px solid ${flowerTagBorder}; border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;">🌸</span>
+          <div>
+            <h4 style="margin:0; font-size:15px; font-weight:800; color:#1e1b4b;">Kết quả Phân loại Mẫu hoa (Sau khi Huấn luyện SVM)</h4>
+            <div style="font-size:11.5px; color:#64748b;">Mô hình vừa huấn luyện đã phân loại tức thì cho thông số mẫu bạn đang chọn</div>
+          </div>
+        </div>
+        <span style="background:${flowerTagBg}; color:${flowerTagColor}; border:1px solid ${flowerTagBorder}; font-size:12px; font-weight:800; padding:4px 12px; border-radius:20px;">
+          ${flowerTagText}
+        </span>
+      </div>
+
+      <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+        <div style="width:100px; height:100px; border-radius:16px; overflow:hidden; border:3px solid ${flowerTagBorder}; flex-shrink:0; box-shadow:0 6px 14px rgba(0,0,0,0.08);">
+          <img src="images/${predSpecies}.jpg" alt="${flowerVi}" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+
+        <div style="flex:1; min-width:240px;">
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-bottom:4px;">
+            Hoa ${flowerVi}
+          </div>
+          <div style="font-size:12.5px; color:#475569; line-height:1.6;">
+            • Tọa độ trên biểu đồ (${featXName} & ${featYName}): <b style="color:#1e1b4b;">(${currentX} cm, ${currentY} cm)</b><br>
+            • Toàn bộ 4 kích thước: Đài <b>${inputs.sl} × ${inputs.sw} cm</b> | Cánh <b>${inputs.pl} × ${inputs.pw} cm</b><br>
+            • Hạt nhân: <b>${kernel.toUpperCase()}</b> (C=${C}${kernel !== 'linear' ? `, γ=${gamma}` : ''}) | Độ chính xác (Accuracy): <b style="color:#059669;">${accuracy}%</b>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; min-width:180px;">
+          <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; text-align:center;">
+            <div style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Trạng thái Phân loại</div>
+            <div style="font-size:15px; font-weight:800; color:${flowerTagColor}; margin-top:2px;">
+              ✓ Phân loại thành công
+            </div>
+          </div>
+          <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; font-size:11.5px; color:#64748b; text-align:center;">
+            ⭐ Support Vectors: <b>${multiSVM.svIndices.length}</b> mẫu điểm
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, kernel, C, gamma, degree, accuracy) {
   const ctx = document.getElementById('decisionChart');
@@ -737,9 +830,9 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
 
       // A. VÙNG PHÂN LOẠI (BACKGROUND COLOR MESH REGIONS)
       const regionColors = [
-        'rgba(16, 185, 129, 0.14)',  // Setosa (Xanh ngọc / Mint thanh nhã)
-        'rgba(245, 158, 11, 0.14)',  // Versicolor (Vàng hổ phách dịu)
-        'rgba(139, 92, 246, 0.14)'   // Virginica (Tím Lavender sang trọng)
+        'rgba(22, 163, 74, 0.16)',   // Setosa (Xanh lá tươi sáng)
+        'rgba(217, 119, 6, 0.16)',   // Versicolor (Vàng hổ phách ấm áp)
+        'rgba(147, 51, 234, 0.16)'   // Virginica (Tím mộng mơ quyến rũ)
       ];
 
       for (let i = 0; i < resX; i++) {
@@ -819,7 +912,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
         {
           label: `🌿 Setosa (${setosaPoints.length})`,
           data: setosaPoints,
-          backgroundColor: '#10b981',
+          backgroundColor: '#16a34a',
           borderWidth: 0,
           pointRadius: 6,
           pointHoverRadius: 8.5
@@ -827,7 +920,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
         {
           label: `🌼 Versicolor (${versiPoints.length})`,
           data: versiPoints,
-          backgroundColor: '#f59e0b',
+          backgroundColor: '#d97706',
           borderWidth: 0,
           pointRadius: 6,
           pointHoverRadius: 8.5
@@ -835,7 +928,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
         {
           label: `🌸 Virginica (${virgiPoints.length})`,
           data: virgiPoints,
-          backgroundColor: '#8b5cf6',
+          backgroundColor: '#9333ea',
           borderWidth: 0,
           pointRadius: 6,
           pointHoverRadius: 8.5
@@ -1174,29 +1267,83 @@ window.resetGuessScore = function() {
   updateGuessScoreUI();
 };
 
-window.generateRandomSample = function() {
+window.generateRandomSample = async function() {
   selectedGuess = null;
   document.querySelectorAll('.guess-opt-btn').forEach(b => b.classList.remove('selected'));
   const guessRes = document.getElementById('guessResult');
+  
+  let sampleData = null;
+
+  // 1. Gọi API FastAPI tính toán vị trí ngẫu nhiên rộng khắp bảng và độ khó cao
+  try {
+    const res = await fetch('/random-sample');
+    if (res.ok) {
+      const data = await res.json();
+      sampleData = {
+        sl: data.sepal_length,
+        sw: data.sepal_width,
+        pl: data.petal_length,
+        pw: data.petal_width,
+        trueClass: data.true_class,
+        difficulty: data.difficulty
+      };
+    }
+  } catch (err) {
+    console.warn('API /random-sample không phản hồi, dùng bộ sinh toán học client:', err);
+  }
+
+  // 2. Fallback sinh ngẫu nhiên rộng khắp toàn bộ bảng nếu API bận
+  if (!sampleData) {
+    const isBorder = Math.random() < 0.45;
+    let pl, pw, sl, sw, diffText;
+    if (isBorder) {
+      // Vùng ranh giới thách thức giữa Versicolor và Virginica
+      pl = +(4.6 + Math.random() * 0.7).toFixed(1);
+      pw = +(1.4 + Math.random() * 0.4).toFixed(1);
+      sl = +(5.7 + Math.random() * 1.0).toFixed(1);
+      sw = +(2.5 + Math.random() * 0.7).toFixed(1);
+      diffText = 'Khó 🔥 (Vùng giáp ranh Versicolor - Virginica)';
+    } else {
+      // Tọa độ tự do chạy khắp bảng
+      pl = +(1.0 + Math.random() * 5.9).toFixed(1);
+      pw = +(0.1 + Math.random() * 2.4).toFixed(1);
+      sl = +(4.3 + Math.random() * 3.6).toFixed(1);
+      sw = +(2.0 + Math.random() * 2.4).toFixed(1);
+      diffText = 'Khắp bảng 🎲 (Thách thức mở rộng)';
+    }
+
+    // Dự đoán nhãn thật bằng hàm SVM chuẩn
+    let trueSpecies = 'setosa';
+    if (pl <= 2.45) {
+      trueSpecies = 'setosa';
+    } else {
+      const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
+      trueSpecies = score >= 0 ? 'virginica' : 'versicolor';
+    }
+
+    sampleData = {
+      sl, sw, pl, pw,
+      trueClass: trueSpecies,
+      difficulty: diffText
+    };
+  }
+
+  currentGuessSample = sampleData;
+
   if (guessRes) {
     guessRes.className = '';
     guessRes.innerHTML = `
-      <div style="display:flex; align-items:center; gap:10px; color:#64748b; font-size:13.5px;">
-        <span>🎲</span>
-        <span>Đã tạo mẫu hoa mới! Hãy quan sát thông số bên trên, chọn dự đoán ở Bước 1 và kiểm tra.</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; color:#475569; font-size:13px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>🎯</span>
+          <span><b>Đã tạo mẫu hoa mới chạy khắp bảng!</b> Hãy quan sát thông số bên trên và chọn loài hoa ở Bước 1.</span>
+        </div>
+        <span style="background:#eef2ff; color:#4338ca; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:700; border:1px solid #c7d2fe;">
+          ${currentGuessSample.difficulty || 'Thử thách độ khó cao 🔥'}
+        </span>
       </div>
     `;
   }
-
-  const idx = Math.floor(Math.random() * ACTIVE_IRIS_DATASET.length);
-  const s = ACTIVE_IRIS_DATASET[idx];
-  currentGuessSample = {
-    sl: s[0],
-    sw: s[1],
-    pl: s[2],
-    pw: s[3],
-    trueClass: SPECIES_NAMES[s[4]]
-  };
 
   const slEl = document.getElementById('guessSepalLength');
   const swEl = document.getElementById('guessSepalWidth');
@@ -1257,28 +1404,28 @@ function renderGuessChart(userPL, userPW) {
     data: {
       datasets: [
         { 
-          label: 'Iris Setosa', 
+          label: 'Iris Setosa (Xanh lá)', 
           data: setosaData, 
-          backgroundColor: '#15803d', 
-          borderColor: '#14532d',
+          backgroundColor: '#16a34a', 
+          borderColor: '#15803d',
           // Giảm kích thước xuống nhỏ hơn 2/3 hiện tại (từ 5.5px xuống 3px)
           pointRadius: 3,
           pointHoverRadius: 4.5
         },
         { 
-          label: 'Iris Versicolor', 
+          label: 'Iris Versicolor (Vàng hổ phách)', 
           data: versicolorData, 
-          backgroundColor: '#2563eb', 
-          borderColor: '#1d4ed8',
+          backgroundColor: '#d97706', 
+          borderColor: '#b45309',
           // Giảm kích thước xuống nhỏ hơn 2/3 hiện tại (từ 5.5px xuống 3px)
           pointRadius: 3,
           pointHoverRadius: 4.5
         },
         { 
-          label: 'Iris Virginica', 
+          label: 'Iris Virginica (Tím mộng mơ)', 
           data: virginicaData, 
-          backgroundColor: '#7e22ce', 
-          borderColor: '#6b21a8',
+          backgroundColor: '#9333ea', 
+          borderColor: '#7e22ce',
           // Giảm kích thước xuống nhỏ hơn 2/3 hiện tại (từ 5.5px xuống 3px)
           pointRadius: 3,
           pointHoverRadius: 4.5
@@ -2350,7 +2497,8 @@ window.handleGateAuthSubmit = async function(e) {
   if (!email || !password) return;
   if (errBox) errBox.style.display = 'none';
 
-  if (password.length < 6) {
+  // Cho phép mật khẩu 'admin' (5 ký tự) hoặc tối thiểu 6 ký tự với tài khoản thông thường
+  if (password.length < 5 || (password.length < 6 && !(email === 'admin@gmail.com' && password === 'admin'))) {
     if (errBox) {
       errBox.style.display = 'block';
       errBox.innerText = '⚠️ Mật khẩu yêu cầu tối thiểu 6 ký tự.';
@@ -2363,8 +2511,11 @@ window.handleGateAuthSubmit = async function(e) {
     submitBtn.innerText = '⏳ Đang xử lý...';
   }
 
-  let role = (email.includes('admin') || email === 'huylechill@gmail.com') ? 'ADMIN' : 'USER';
-  let userId = 'u_' + Date.now();
+  let role = (email === 'admin@gmail.com' || email.includes('admin')) ? 'ADMIN' : 'USER';
+  let userId = role === 'ADMIN' ? '00000000-0000-0000-0000-000000000001' : ('u_' + Date.now());
+  if (email === 'admin@gmail.com' && (!nameInput || !nameInput.value.trim())) {
+    name = 'Lê Thanh Thảo';
+  }
 
   try {
     if (currentGateTab === 'signup') {
@@ -2446,8 +2597,18 @@ window.handleGateAuthSubmit = async function(e) {
       // ==========================================
       let matched = null;
 
+      // Ưu tiên đặc biệt: Tài khoản Quản trị viên chuẩn admin@gmail.com / admin
+      if (email === 'admin@gmail.com' && password === 'admin') {
+        matched = {
+          id: '00000000-0000-0000-0000-000000000001',
+          name: 'Lê Thanh Thảo',
+          email: 'admin@gmail.com',
+          role: 'ADMIN'
+        };
+      }
+
       // 1. Kiểm tra trên Supabase bảng app_users
-      if (supabaseClient) {
+      if (!matched && supabaseClient) {
         try {
           const { data: dbUsers } = await supabaseClient.from('app_users').select('*').eq('email', email);
           if (dbUsers && dbUsers.length > 0) {
@@ -2573,11 +2734,12 @@ window.handleGateAuthSubmit = async function(e) {
 };
 
 window.quickLoginGate = function(email, role) {
+  const isAdmin = role === 'ADMIN' || email === 'admin@gmail.com';
   currentUser = {
-    id: role === 'ADMIN' ? 'admin_01' : 'user_01',
-    email: email,
-    name: role === 'ADMIN' ? 'Quản trị viên (Admin)' : 'Sinh viên Nghiên cứu',
-    role: role,
+    id: isAdmin ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002',
+    email: isAdmin ? 'admin@gmail.com' : email,
+    name: isAdmin ? 'Lê Thanh Thảo (Admin)' : 'Sinh viên Nghiên cứu',
+    role: isAdmin ? 'ADMIN' : 'USER',
     createdAt: new Date().toLocaleDateString('vi-VN')
   };
   localStorage.setItem('iris_active_user', JSON.stringify(currentUser));

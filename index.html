@@ -84,9 +84,9 @@
         .species-card:hover .species-card-img { transform: scale(1.05); }
         .species-card-body { padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
         .species-tag { font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; width: fit-content; text-transform: uppercase; letter-spacing: 0.5px; }
-        .species-tag.setosa { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-        .species-tag.versicolor { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-        .species-tag.virginica { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+        .species-tag.setosa { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .species-tag.versicolor { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+        .species-tag.virginica { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
         .species-card-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.3; }
         .species-subtitle { font-size: 12px; color: #64748b; font-style: italic; margin-top: -6px; }
         .species-desc { font-size: 13px; color: #334155; line-height: 1.55; }
@@ -94,9 +94,9 @@
         .species-traits-title { font-weight: 700; color: #1e293b; font-size: 12px; display: flex; align-items: center; gap: 5px; }
         .species-specs { font-size: 12px; color: #1e293b; background: #ffffff; padding: 10px 12px; border-radius: 10px; line-height: 1.55; border: 1px solid #cbd5e1; font-family: ui-monospace, monospace; }
         .species-svm-note { font-size: 11.5px; font-weight: 600; padding: 6px 10px; border-radius: 8px; margin-top: auto; }
-        .species-svm-note.setosa { background: #ecfdf5; color: #047857; border-left: 3px solid #10b981; }
-        .species-svm-note.versicolor { background: #fffbeb; color: #b45309; border-left: 3px solid #f59e0b; }
-        .species-svm-note.virginica { background: #faf5ff; color: #7e22ce; border-left: 3px solid #a855f7; }
+        .species-svm-note.setosa { background: #f0fdf4; color: #166534; border-left: 3px solid #22c55e; }
+        .species-svm-note.versicolor { background: #fffbeb; color: #92400e; border-left: 3px solid #f59e0b; }
+        .species-svm-note.virginica { background: #faf5ff; color: #6b21a8; border-left: 3px solid #a855f7; }
 
         /* PREDICT & TRAINING SPLIT */
         .predict-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; }
@@ -619,9 +619,9 @@
         .file-flower-cell {
             font-weight: 600;
         }
-        .file-flower-cell.setosa { color: #166534; }
-        .file-flower-cell.versicolor { color: #1e40af; }
-        .file-flower-cell.virginica { color: #6b21a8; }
+        .file-flower-cell.setosa { color: #15803d; }
+        .file-flower-cell.versicolor { color: #b45309; }
+        .file-flower-cell.virginica { color: #7e22ce; }
         .file-correct { color: #166534; font-weight: 600; }
         .file-wrong { color: #dc2626; font-weight: 600; }
 
@@ -666,7 +666,7 @@
             <div style="margin-bottom:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                     <label style="font-size:12px; font-weight:600; color:#374151;">Mật khẩu</label>
-                    <span style="font-size:11px; color:#6366f1; cursor:pointer;" onclick="alert('Vui lòng liên hệ Admin qua email huylechill@gmail.com để lấy lại mật khẩu.')">Quên mật khẩu?</span>
+                    <span style="font-size:11px; color:#6366f1; cursor:pointer;" onclick="alert('Vui lòng liên hệ Admin qua email lethanhthao8130@gmail.com để lấy lại mật khẩu.')">Quên mật khẩu?</span>
                 </div>
                 <input id="gatePasswordInput" type="password" required class="form-input" placeholder="••••••••" style="padding:10px 12px; border-radius:10px;">
             </div>
@@ -681,8 +681,8 @@
         <div style="margin-top:18px; padding-top:14px; border-top:1px dashed #e2e8f0; text-align:center;">
             <div style="font-size:11.5px; color:#64748b; margin-bottom:8px; font-weight:600;">⚡ HOẶC TRẢI NGHIỆM NHANH (MỘT CHẠM)</div>
             <div style="display:flex; gap:8px;">
-                <button type="button" class="action-btn" style="flex:1; padding:8px 6px; font-size:11.5px; font-weight:700; color:#d97706; background:#fffbeb; border-color:#fde68a; border-radius:8px;" onclick="quickLoginGate('admin@iris-svm.local', 'ADMIN')">
-                    👑 Admin Demo
+                <button type="button" class="action-btn" style="flex:1; padding:8px 6px; font-size:11.5px; font-weight:700; color:#d97706; background:#fffbeb; border-color:#fde68a; border-radius:8px;" onclick="quickLoginGate('admin@gmail.com', 'ADMIN')">
+                    👑 Admin Demo (admin@gmail.com)
                 </button>
                 <button type="button" class="action-btn" style="flex:1; padding:8px 6px; font-size:11.5px; font-weight:700; color:#4f46e5; background:#eef2ff; border-color:#c7d2fe; border-radius:8px;" onclick="quickLoginGate('student@iris-svm.local', 'USER')">
                     🧑‍🎓 Sinh viên Demo
@@ -1012,9 +1012,9 @@
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
                         <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">
-                            <span style="background:#ecfdf5; color:#065f46; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #a7f3d0;">🌿 Iris Setosa (Xanh ngọc)</span>
-                            <span style="background:#fffbeb; color:#92400e; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #fde68a;">🌼 Iris Versicolor (Vàng hổ phách)</span>
-                            <span style="background:#f5f3ff; color:#5b21b6; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #ddd6fe;">🌸 Iris Virginica (Tím Lavender)</span>
+                            <span style="background:#dcfce7; color:#15803d; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #86efac;">🌿 Iris Setosa (Xanh lá)</span>
+                            <span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #fcd34d;">🌼 Iris Versicolor (Vàng hổ phách)</span>
+                            <span style="background:#f3e8ff; color:#7e22ce; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #d8b4fe;">🌸 Iris Virginica (Tím mộng mơ)</span>
                             <span style="background:#fff1f2; color:#9f1239; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #fecdd3;">⭐ Support Vectors (SV)</span>
                             <span style="background:#eef2ff; color:#3730a3; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #c7d2fe;">〰️ Decision Boundary (Ranh giới)</span>
                         </div>
@@ -1033,6 +1033,9 @@
                     <div id="boundaryEquationText" style="margin-top:12px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0; font-size:12.5px; line-height:1.6; color:#334155;">
                         💡 <b>Mẹo tương tác:</b> Nhấp chuột lên biểu đồ để dịch chuyển tọa độ điểm dự đoán tức thì hoặc hover vào từng điểm dữ liệu để xem thông số chi tiết.
                     </div>
+
+                    <!-- KHU VỰC KẾT QUẢ PHÂN LOẠI HOA SAU KHI HUẤN LUYỆN (KHÔNG CẦN CUỘN LÊN TRÊN) -->
+                    <div id="trainingInlineResultCard" style="display:none; margin-top:16px;"></div>
                 </div>
 
                 <!-- KHU VỰC D: TIMELINE HUẤN LUYỆN (MỤC IV) -->
@@ -1522,26 +1525,17 @@
         <div class="guide-section-card" style="background:linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%); border-color:#ddd6fe;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
                 <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:#6d28d9; background:#ede9fe; padding:4px 10px; border-radius:20px; border:1px solid #ddd6fe;">👑 1. Thông tin Quản trị viên (Admin)</span>
-                <span class="role-badge admin">LEAD DEVELOPER</span>
             </div>
             
             <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-                <div style="width:68px; height:68px; border-radius:20px; background:linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); display:flex; align-items:center; justify-content:center; font-size:32px; color:white; box-shadow:0 8px 20px rgba(99,102,241,0.25); border:3px solid #ffffff; flex-shrink:0;">
-                    👨‍💻
+                <div style="width:58px; height:58px; border-radius:18px; background:linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); display:flex; align-items:center; justify-content:center; font-size:28px; color:white; box-shadow:0 8px 18px rgba(99,102,241,0.22); border:2px solid #ffffff; flex-shrink:0;">
+                    👩‍💼
                 </div>
-                <div style="flex:1; min-width:220px;">
-                    <div style="font-size:17px; font-weight:800; color:#1e1b4b;">Huy Lê (Admin & Kỹ sư Trí tuệ Nhân tạo)</div>
-                    <div style="font-size:12.5px; color:#4338ca; font-weight:600; margin-top:2px;">Email: <a href="mailto:huylechill@gmail.com" style="color:#4f46e5; text-decoration:none;">huylechill@gmail.com</a></div>
-                    <div style="font-size:12px; color:#64748b; margin-top:6px; line-height:1.5;">
-                        Chịu trách nhiệm kiến trúc toán học mô hình SVM, huấn luyện đa hạt nhân, tích hợp cơ sở dữ liệu xác thực Supabase và trực quan hóa Decision Boundary.
-                    </div>
+                <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:5px;">
+                    <div style="font-size:16px; font-weight:800; color:#1e1b4b;">Họ và tên: <span style="color:#4f46e5;">Lê Thanh Thảo</span></div>
+                    <div style="font-size:13px; color:#334155; font-weight:600;">Ngày Sinh: <span style="color:#0f172a; font-weight:700;">21/06/2026</span></div>
+                    <div style="font-size:13px; color:#334155; font-weight:600;">Email: <a href="mailto:lethanhthao8130@gmail.com" style="color:#4f46e5; text-decoration:none; font-weight:700;">lethanhthao8130@gmail.com</a></div>
                 </div>
-            </div>
-
-            <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-                <span style="font-size:11.5px; background:white; border:1px solid #e0e7ff; padding:4px 9px; border-radius:8px; color:#3730a3; font-weight:600;">⚡ Chuyên gia Thuật toán SVM</span>
-                <span style="font-size:11.5px; background:white; border:1px solid #e0e7ff; padding:4px 9px; border-radius:8px; color:#3730a3; font-weight:600;">📊 Trực quan hóa Dữ liệu 2D/3D</span>
-                <span style="font-size:11.5px; background:white; border:1px solid #e0e7ff; padding:4px 9px; border-radius:8px; color:#3730a3; font-weight:600;">🔒 Bảo mật & Xác thực Supabase</span>
             </div>
         </div>
 
@@ -1552,21 +1546,21 @@
             </div>
 
             <p style="margin:0 0 10px; font-size:13px; line-height:1.6; color:#334155;">
-                <b>Iris SVM Platform</b> là nền tảng trực quan hóa và phân loại học máy chuyên sâu giải quyết bài toán phân loại 3 loài hoa Diên Vĩ kinh điển: <i>Iris Setosa</i>, <i>Iris Versicolor</i>, và <i>Iris Virginica</i> dựa trên 4 đặc trưng hình thái (Chiều dài & Chiều rộng Đài hoa, Chiều dài & Chiều rộng Cánh hoa).
+                <b>Iris SVM Platform</b> là nền tảng trực quan hóa và phân loại học máy chuyên sâu giải quyết bài toán phân loại 3 loài hoa Diên Vĩ kinh điển: <i>Iris Setosa</i>, <i>Iris Versicolor</i>, và <i>Iris Virginica</i> dựa trên đầy đủ 4 đặc trưng hình thái (Chiều dài & Chiều rộng Đài hoa, Chiều dài & Chiều rộng Cánh hoa).
             </p>
 
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin-top:10px;">
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
                     <div style="font-weight:700; color:#1e1b4b; font-size:12.5px; margin-bottom:4px;">🎯 Siêu phẳng tối ưu (SVM)</div>
-                    <div style="font-size:11.5px; color:#64748b; line-height:1.4;">Tìm kiếm ranh giới phân tách có lề (Margin) cực đại giữa các lớp, tối thiểu hóa sai số và tránh Overfitting.</div>
+                    <div style="font-size:11.5px; color:#64748b; line-height:1.4;">Tìm kiếm siêu phẳng phân tách có lề (Margin) cực đại giữa các lớp, tối thiểu hóa sai số và nhận diện tức thì.</div>
                 </div>
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-                    <div style="font-weight:700; color:#1e1b4b; font-size:12.5px; margin-bottom:4px;">⚡ 5 Loại Hạt nhân (Kernels)</div>
-                    <div style="font-size:11.5px; color:#64748b; line-height:1.4;">Hỗ trợ đầy đủ <b>Linear</b>, <b>RBF (Gaussian)</b>, <b>Polynomial</b>, <b>Sigmoid</b> và <b>Precomputed</b> linh hoạt theo bài toán.</div>
+                    <div style="font-weight:700; color:#1e1b4b; font-size:12.5px; margin-bottom:4px;">⚡ 5 Kernel SVM Thật sự</div>
+                    <div style="font-size:11.5px; color:#64748b; line-height:1.4;">Huấn luyện và đánh giá riêng biệt cả 5 kernel: <b>RBF</b>, <b>Linear</b>, <b>Polynomial</b>, <b>Sigmoid</b> và <b>Precomputed</b> (ma trận tích vô hướng Gram).</div>
                 </div>
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-                    <div style="font-weight:700; color:#1e1b4b; font-size:12.5px; margin-bottom:4px;">📈 Đánh giá Toàn diện</div>
-                    <div style="font-size:11.5px; color:#64748b; line-height:1.4;">Phân tích Ma trận nhầm lẫn (Confusion Matrix), Accuracy, Precision, Recall, F1-Score và số lượng Support Vectors.</div>
+                    <div style="font-weight:700; color:#1e1b4b; font-size:12.5px; margin-bottom:4px;">📈 Trực quan hóa & Thử thách AI</div>
+                    <div style="font-size:11.5px; color:#64748b; line-height:1.4;">Vẽ Decision Boundary 2D tương tác thời gian thực, trò chơi đoán hoa tạo mẫu khắp bảng độ khó cao và đồng bộ CSDL Supabase.</div>
                 </div>
             </div>
         </div>
@@ -1584,7 +1578,7 @@
                         <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">🎯 Nhận diện & Huấn luyện</span>
                     </div>
                     <div style="font-size:11.5px; color:#64748b; line-height:1.4;">
-                        Kéo thanh trượt 4 kích thước hoa hoặc nhấp trực tiếp vào đồ thị 2D để xem SVM phân loại tức thì cùng xác suất dự đoán.
+                        Kéo thanh trượt 4 kích thước hoa hoặc nhấp trực tiếp vào đồ thị 2D để xem SVM phân loại tức thì. Bấm "Huấn luyện & Vẽ Decision Boundary" để cập nhật ranh giới và xem ngay kết quả phân loại ở phía dưới.
                     </div>
                 </div>
 
@@ -1594,17 +1588,17 @@
                         <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">🔮 Thử thách Đoán hoa</span>
                     </div>
                     <div style="font-size:11.5px; color:#64748b; line-height:1.4;">
-                        Quan sát tọa độ phân tán trên không gian 2 đặc trưng và tự dự đoán loài hoa trước khi hệ thống công bố đáp án.
+                        Tham gia thử thách phán đoán với mẫu hoa ngẫu nhiên phân bổ rộng khắp bảng do API tính toán (kèm các vùng giáp ranh khó) và kiểm tra đối chiếu cùng AI.
                     </div>
                 </div>
 
                 <div class="guide-step-item">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span class="guide-step-number">3</span>
-                        <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">📊 Phân tích Dữ liệu (EDA)</span>
+                        <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">📊 Phân tích Dữ liệu (EDA) & File</span>
                     </div>
                     <div style="font-size:11.5px; color:#64748b; line-height:1.4;">
-                        Khám phá ma trận tương quan giữa các đặc tính hình học hoặc tải tệp tin CSV/Excel để phân loại hàng loạt.
+                        Khám phá phân phối dữ liệu 150 mẫu Iris, biểu đồ phân tán ma trận tương quan và tải tệp CSV/Excel lên để phân loại hàng loạt.
                     </div>
                 </div>
 
@@ -1614,17 +1608,17 @@
                         <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">🏆 Model Benchmark</span>
                     </div>
                     <div style="font-size:11.5px; color:#64748b; line-height:1.4;">
-                        Nhấn nút chạy so sánh đồng thời cả 5 Kernel SVM để xem bảng đối chiếu hiệu năng và biểu đồ so sánh chi tiết.
+                        Đối chiếu bảng số liệu thực tế của 5 Kernel SVM qua Accuracy, Precision, Recall, F1-score và ma trận nhầm lẫn (Confusion Matrix).
                     </div>
                 </div>
 
                 <div class="guide-step-item">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span class="guide-step-number">5</span>
-                        <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">👑 Quản trị & Nhật ký</span>
+                        <span style="font-weight:700; font-size:12.5px; color:#1e1b4b;">👑 Quản trị & Nhật ký Hệ thống</span>
                     </div>
                     <div style="font-size:11.5px; color:#64748b; line-height:1.4;">
-                        Dành riêng cho Admin theo dõi tần suất sử dụng mô hình, quản lý thành viên và xem toàn bộ nhật ký huấn luyện.
+                        Dành riêng cho Quản trị viên (admin@gmail.com / admin) xem toàn bộ lịch sử thí nghiệm, quản lý người dùng và thống kê lượt sử dụng.
                     </div>
                 </div>
             </div>

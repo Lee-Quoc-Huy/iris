@@ -184,21 +184,25 @@ END $$;
 
 -- =====================================================================
 -- 12. TẠO SẴN TÀI KHOẢN ADMIN MẪU
--- Email: huylechill@gmail.com | Mật khẩu: 123456
+-- Email: admin@gmail.com | Mật khẩu: admin
 -- =====================================================================
 INSERT INTO public.app_users (id, name, email, password, role)
-VALUES ('admin_01', 'Huy Lê', 'huylechill@gmail.com', '123456', 'ADMIN')
+VALUES ('00000000-0000-0000-0000-000000000001', 'Lê Thanh Thảo', 'admin@gmail.com', 'admin', 'ADMIN')
 ON CONFLICT (email) DO UPDATE SET 
     name = EXCLUDED.name,
     password = EXCLUDED.password,
     role = EXCLUDED.role;
 
-INSERT INTO public.profiles (id, email, full_name, password, role)
-VALUES ('admin_01', 'huylechill@gmail.com', 'Huy Lê', '123456', 'ADMIN')
-ON CONFLICT (id) DO UPDATE SET 
-    full_name = EXCLUDED.full_name,
-    password = EXCLUDED.password,
-    role = EXCLUDED.role;
+-- Thử thêm vào profiles (bọc an toàn trong DO block để không bao giờ báo lỗi)
+DO $$ BEGIN
+    INSERT INTO public.profiles (id, email, full_name, password, role)
+    VALUES ('00000000-0000-0000-0000-000000000001', 'admin@gmail.com', 'Lê Thanh Thảo', 'admin', 'ADMIN')
+    ON CONFLICT (id) DO UPDATE SET 
+        full_name = EXCLUDED.full_name,
+        password = EXCLUDED.password,
+        role = EXCLUDED.role;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
 -- Dữ liệu nội dung hướng dẫn
 INSERT INTO public.app_content (key, title, content)

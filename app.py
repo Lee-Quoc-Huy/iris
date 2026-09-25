@@ -11,7 +11,14 @@ app.py — FastAPI server cho Iris SVM Classification hỗ trợ đầy đủ 5 
 - Phục vụ toàn bộ frontend (dist/index.html + images/).
 """
 import os
+import sys
 import json
+
+# Thiết lập encoding UTF-8 cho console Windows
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
@@ -24,22 +31,46 @@ from pydantic import BaseModel
 from typing import Optional
 
 import numpy as np
+import random
+import sys
 
-# Định nghĩa lại class PrecomputedSVM để joblib unpickle thành công
-class PrecomputedSVM:
-    def __init__(self, C=1.0):
+# Định nghĩa PrecomputedSVCWrapper để tương thích unpickle từ train.py
+class PrecomputedSVCWrapper:
+    def __init__(self, C=1.0, random_state=42):
         self.C = C
+        self.random_state = random_state
         self.model = None
         self.X_train = None
 
     def fit(self, X, y):
-        self.X_train = np.array(X)
+        self.X_train = np.array(X, dtype=float)
+        K_train = np.dot(self.X_train, self.X_train.T)
+        self.model.fit(K_train, y)
         return self
 
     def predict(self, X):
-        X = np.array(X)
+        X = np.array(X, dtype=float)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
         K = np.dot(X, self.X_train.T)
         return self.model.predict(K)
+
+    def decision_function(self, X):
+        X = np.array(X, dtype=float)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+        K = np.dot(X, self.X_train.T)
+        return self.model.decision_function(K)
+
+# Đảm bảo unpickle tìm thấy PrecomputedSVCWrapper ở cả train và __main__
+sys.modules['__main__'].PrecomputedSVCWrapper = PrecomputedSVCWrapper
+if 'train' not in sys.modules:
+    import types
+    mod_train = types.ModuleType('train')
+    mod_train.PrecomputedSVCWrapper = PrecomputedSVCWrapper
+    sys.modules['train'] = mod_train
+else:
+    sys.modules['train'].PrecomputedSVCWrapper = PrecomputedSVCWrapper
 
 # ── Khởi tạo FastAPI ─────────────────────────────────────────────────────────
 app = FastAPI(
@@ -158,6 +189,68 @@ def predict(data: IrisInput):
         "class_id": pred,
         "prediction": SPECIES[pred],
         "kernel_used": k if k in MODELS else "linear"
+    }
+
+@app.get("/random-sample")
+def get_random_sample():
+    """
+    API sinh mẫu hoa ngẫu nhiên cho trò chơi Đoán hoa.
+    Phạm vi rộng khắp toàn bộ bảng đặc trưng (không chỉ quanh giá trị trung bình)
+    để tạo độ khó và tính thách thức cao cho người chơi.
+    """
+    mode = random.random()
+    
+    # 40% khả năng rơi vào vùng ranh giới khó phân biệt
+    if mode < 0.40:
+        boundary_choice = random.choice(["border_versi_virgi", "border_setosa_versi"])
+        if boundary_choice == "border_versi_virgi":
+            # Vùng tranh chấp ranh giới giữa Versicolor và Virginica
+            pl = round(random.uniform(4.5, 5.3), 1)
+            pw = round(random.uniform(1.4, 1.8), 1)
+            sl = round(random.uniform(5.6, 6.8), 1)
+            sw = round(random.uniform(2.5, 3.2), 1)
+            difficulty = "Khó 🔥 (Vùng ranh giới Versicolor - Virginica)"
+        else:
+            # Vùng chuyển tiếp Setosa sang Versicolor
+            pl = round(random.uniform(2.0, 2.8), 1)
+            pw = round(random.uniform(0.6, 0.9), 1)
+            sl = round(random.uniform(4.8, 5.6), 1)
+            sw = round(random.uniform(2.8, 3.8), 1)
+            difficulty = "Thử thách ⚡ (Vùng chuyển tiếp Setosa)"
+    elif mode < 0.70:
+        # Vùng ngoại lai / giá trị cực trị (Extreme/Boundary range khắp bảng)
+        pl = round(random.uniform(1.0, 6.9), 1)
+        pw = round(random.uniform(0.1, 2.5), 1)
+        sl = round(random.uniform(4.3, 7.9), 1)
+        sw = round(random.uniform(2.0, 4.4), 1)
+        difficulty = "Khắp bảng 🎲 (Tọa độ tự do)"
+    else:
+        # Mẫu ngẫu nhiên tự nhiên rộng
+        pl = round(random.uniform(1.2, 6.7), 1)
+        pw = round(random.uniform(0.2, 2.4), 1)
+        sl = round(random.uniform(4.5, 7.7), 1)
+        sw = round(random.uniform(2.2, 4.2), 1)
+        difficulty = "Tiêu chuẩn 🎯"
+
+    # Tính nhãn thật bằng mô hình SVM chính xác nhất (Linear hoặc RBF)
+    model = MODELS.get("linear") or MODELS.get("rbf")
+    pred = 0
+    if model is not None:
+        try:
+            pred = int(model.predict([[sl, sw, pl, pw]])[0])
+        except Exception:
+            pred = 0 if pl <= 2.45 else (2 if (-0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35) >= 0 else 1)
+    else:
+        pred = 0 if pl <= 2.45 else (2 if (-0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35) >= 0 else 1)
+
+    return {
+        "sepal_length": sl,
+        "sepal_width": sw,
+        "petal_length": pl,
+        "petal_width": pw,
+        "class_id": pred,
+        "true_class": SPECIES[pred],
+        "difficulty": difficulty
     }
 
 # ── Phục vụ ảnh hoa ──────────────────────────────────────────────────────────
