@@ -45,17 +45,22 @@ const IRIS_DATASET = [
 const SPECIES_NAMES = ['setosa', 'versicolor', 'virginica'];
 const FEATURE_NAMES = ['Sepal Length', 'Sepal Width', 'Petal Length', 'Petal Width'];
 
-// Tập dữ liệu 50 mẫu hoa Iris phân bổ đều 3 loài (17 Setosa, 17 Versicolor, 16 Virginica)
-const ACTIVE_IRIS_DATASET = IRIS_DATASET.filter((_, idx) => idx % 3 === 0);
+// Cố định tập dữ liệu chuẩn 60 mẫu hoa Iris (20 Setosa, 20 Versicolor, 20 Virginica)
+const ACTIVE_IRIS_DATASET = [
+  ...IRIS_DATASET.filter(d => d[4] === 0).slice(0, 20),
+  ...IRIS_DATASET.filter(d => d[4] === 1).slice(0, 20),
+  ...IRIS_DATASET.filter(d => d[4] === 2).slice(0, 20)
+];
 
 // =====================================================================
-// 2. SVM MATHEMATICAL ENGINE (SMO Multi-Class OvR)
+// 2. SVM MATHEMATICAL ENGINE (DETERMINISTIC SMO MULTI-CLASS OvR)
 // =====================================================================
 function computeKernel(x1, x2, kernel, gamma, degree = 3, coef0 = 1.0) {
   let dot = 0, dsq = 0;
   for (let i = 0; i < x1.length; i++) {
+    const diff = x1[i] - x2[i];
     dot += x1[i] * x2[i];
-    dsq += (x1[i] - x2[i]) ** 2;
+    dsq += diff * diff;
   }
   if (kernel === 'linear' || kernel === 'precomputed') return dot;
   if (kernel === 'rbf') return Math.exp(-gamma * dsq);
@@ -64,67 +69,168 @@ function computeKernel(x1, x2, kernel, gamma, degree = 3, coef0 = 1.0) {
   return Math.exp(-gamma * dsq);
 }
 
+/**
+ * Thuật toán Huấn luyện SVM Nhị phân XÁC ĐỊNH 100% (Deterministic Platt's SMO).
+ * Tuyệt đối không dùng Math.random() để đảm bảo cùng 1 bộ dữ liệu và tham số
+ * thì siêu phẳng và Decision Boundary luôn ra kết quả giống nhau 100%, không bị nhảy hình!
+ */
 function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
   const n = X.length;
-  const alphas = new Array(n).fill(0);
-  let b = 0;
-  const K = Array.from({ length: n }, () => new Array(n).fill(0));
+  const alphas = new Float64Array(n);
+  const errors = new Float64Array(n);
+  let b = 0.0;
+
+  // 1. Tiền tính toán ma trận Kernel đối xứng K (Gram Matrix)
+  const K = Array.from({ length: n }, () => new Float64Array(n));
   for (let i = 0; i < n; i++) {
     for (let j = i; j < n; j++) {
       const v = computeKernel(X[i], X[j], kernel, gamma, degree, coef0);
-      K[i][j] = v; K[j][i] = v;
+      K[i][j] = v;
+      K[j][i] = v;
     }
   }
 
-  const predictRaw = (idx) => {
-    let f = b;
-    for (let i = 0; i < n; i++) {
-      if (alphas[i] > 1e-5) f += alphas[i] * y[i] * K[i][idx];
+  // Khởi tạo sai số ban đầu: E_i = f(x_i) - y_i = b - y_i = -y_i
+  for (let i = 0; i < n; i++) {
+    errors[i] = -y[i];
+  }
+
+  const tol = 1e-3;
+  const eps = 1e-3;
+
+  function takeStep(i1, i2) {
+    if (i1 === i2) return 0;
+    const y1 = y[i1];
+    const y2 = y[i2];
+    const alpha1 = alphas[i1];
+    const alpha2 = alphas[i2];
+    const E1 = errors[i1];
+    const E2 = errors[i2];
+    const s = y1 * y2;
+
+    let L, H;
+    if (y1 !== y2) {
+      L = Math.max(0, alpha2 - alpha1);
+      H = Math.min(C, C + alpha2 - alpha1);
+    } else {
+      L = Math.max(0, alpha1 + alpha2 - C);
+      H = Math.min(C, alpha1 + alpha2);
     }
-    return f;
-  };
+    if (Math.abs(L - H) < 1e-7) return 0;
 
-  let passes = 0;
-  const maxPasses = 10;
-  const tol = 1e-4;
+    const k11 = K[i1][i1];
+    const k12 = K[i1][i2];
+    const k22 = K[i2][i2];
+    const eta = 2 * k12 - k11 - k22;
 
-  while (passes < maxPasses) {
-    let changed = 0;
-    for (let i = 0; i < n; i++) {
-      const Ei = predictRaw(i) - y[i];
-      if ((y[i] * Ei < -tol && alphas[i] < C) || (y[i] * Ei > tol && alphas[i] > 0)) {
-        let j = Math.floor(Math.random() * (n - 1));
-        if (j >= i) j++;
-        const Ej = predictRaw(j) - y[j];
-        const oldAi = alphas[i], oldAj = alphas[j];
-        let L = 0, H = 0;
-        if (y[i] !== y[j]) {
-          L = Math.max(0, alphas[j] - alphas[i]);
-          H = Math.min(C, C + alphas[j] - alphas[i]);
-        } else {
-          L = Math.max(0, alphas[i] + alphas[j] - C);
-          H = Math.min(C, alphas[i] + alphas[j]);
+    let a2;
+    if (eta < 0) {
+      a2 = alpha2 - (y2 * (E1 - E2)) / eta;
+      if (a2 < L) a2 = L;
+      else if (a2 > H) a2 = H;
+    } else {
+      const c1 = eta / 2;
+      const c2 = y2 * (E1 - E2) - eta * alpha2;
+      const Lobj = c1 * L * L + c2 * L;
+      const Hobj = c1 * H * H + c2 * H;
+      if (Lobj > Hobj + eps) a2 = L;
+      else if (Lobj < Hobj - eps) a2 = H;
+      else a2 = alpha2;
+    }
+
+    if (Math.abs(a2 - alpha2) < eps * (a2 + alpha2 + eps)) return 0;
+
+    const a1 = alpha1 + s * (alpha2 - a2);
+
+    // Cập nhật ngưỡng b một cách tất định
+    const b1 = b - E1 - y1 * (a1 - alpha1) * k11 - y2 * (a2 - alpha2) * k12;
+    const b2 = b - E2 - y1 * (a1 - alpha1) * k12 - y2 * (a2 - alpha2) * k22;
+
+    let bNew = (b1 + b2) / 2.0;
+    if (a1 > 0 && a1 < C) bNew = b1;
+    else if (a2 > 0 && a2 < C) bNew = b2;
+
+    const deltaB = bNew - b;
+    b = bNew;
+
+    alphas[i1] = a1;
+    alphas[i2] = a2;
+
+    // Cập nhật lại errors cho tất cả mẫu
+    for (let k = 0; k < n; k++) {
+      errors[k] += y1 * (a1 - alpha1) * K[i1][k] + y2 * (a2 - alpha2) * K[i2][k] + deltaB;
+    }
+
+    return 1;
+  }
+
+  function examineExample(i2) {
+    const y2 = y[i2];
+    const alpha2 = alphas[i2];
+    const E2 = errors[i2];
+    const r2 = E2 * y2;
+
+    // Kiểm tra điều kiện Karush-Kuhn-Tucker (KKT)
+    if ((r2 < -tol && alpha2 < C) || (r2 > tol && alpha2 > 0)) {
+      // Heuristic 1: Tìm i1 có |E1 - E2| cực đại trong số các mẫu non-bound
+      let maxDelta = -1;
+      let i1 = -1;
+      for (let k = 0; k < n; k++) {
+        if (alphas[k] > 0 && alphas[k] < C) {
+          const delta = Math.abs(errors[k] - E2);
+          if (delta > maxDelta) {
+            maxDelta = delta;
+            i1 = k;
+          }
         }
-        if (L >= H) continue;
-        const eta = 2 * K[i][j] - K[i][i] - K[j][j];
-        if (eta >= 0) continue;
-        let newAj = oldAj - (y[j] * (Ei - Ej)) / eta;
-        if (newAj > H) newAj = H; else if (newAj < L) newAj = L;
-        if (Math.abs(newAj - oldAj) < 1e-5) continue;
-        const newAi = oldAi + y[i] * y[j] * (oldAj - newAj);
-        alphas[i] = newAi; alphas[j] = newAj;
-        const b1 = b - Ei - y[i] * (newAi - oldAi) * K[i][i] - y[j] * (newAj - oldAj) * K[i][j];
-        const b2 = b - Ej - y[i] * (newAi - oldAi) * K[i][j] - y[j] * (newAj - oldAj) * K[j][j];
-        if (newAi > 0 && newAi < C) b = b1;
-        else if (newAj > 0 && newAj < C) b = b2;
-        else b = (b1 + b2) / 2;
-        changed++;
+      }
+      if (i1 >= 0 && takeStep(i1, i2)) return 1;
+
+      // Heuristic 2: Duyệt vòng tuần hoàn xác định bắt đầu từ i2 qua non-bound examples
+      for (let k = 0; k < n; k++) {
+        const idx = (i2 + k) % n;
+        if (alphas[idx] > 0 && alphas[idx] < C) {
+          if (takeStep(idx, i2)) return 1;
+        }
+      }
+
+      // Heuristic 3: Duyệt vòng tuần hoàn xác định bắt đầu từ i2 qua toàn bộ tập mẫu
+      for (let k = 0; k < n; k++) {
+        const idx = (i2 + k) % n;
+        if (takeStep(idx, i2)) return 1;
       }
     }
-    if (changed === 0) passes++;
-    else passes = 0;
+    return 0;
   }
 
+  // Vòng lặp hội tụ SMO chính
+  let numChanged = 0;
+  let examineAll = 1;
+  let iter = 0;
+  const maxIters = 60;
+
+  while ((numChanged > 0 || examineAll) && iter < maxIters) {
+    numChanged = 0;
+    if (examineAll) {
+      for (let i = 0; i < n; i++) {
+        numChanged += examineExample(i);
+      }
+    } else {
+      for (let i = 0; i < n; i++) {
+        if (alphas[i] > 0 && alphas[i] < C) {
+          numChanged += examineExample(i);
+        }
+      }
+    }
+    if (examineAll === 1) {
+      examineAll = 0;
+    } else if (numChanged === 0) {
+      examineAll = 1;
+    }
+    iter++;
+  }
+
+  // Trích xuất các Vector hỗ trợ (Support Vectors)
   const svIndices = [];
   const svWeights = [];
   for (let i = 0; i < n; i++) {
@@ -134,21 +240,8 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
     }
   }
 
-  let w = null;
-  if (kernel === 'linear' || kernel === 'precomputed') {
-    w = new Array(X[0].length).fill(0);
-    for (let k = 0; k < svIndices.length; k++) {
-      const idx = svIndices[k];
-      const alpha_y = svWeights[k];
-      for (let d = 0; d < X[0].length; d++) {
-        w[d] += alpha_y * X[idx][d];
-      }
-    }
-  }
-
   return {
     svIndices,
-    w,
     b,
     decisionFunction: (x) => {
       let sum = b;
@@ -172,6 +265,9 @@ function trainMultiClassSVM(X_train, y_train, C, kernel, gamma, degree = 3, coef
     model.svIndices.forEach(idx => allSvIndices.add(idx));
   }
 
+  const svIndices = Array.from(allSvIndices).sort((a, b) => a - b);
+  const support_vectors_ = svIndices.map(idx => X_train[idx]);
+
   const predictSample = (x) => {
     const scores = models.map(m => m.decisionFunction(x));
     let bestClass = 0, maxScore = scores[0];
@@ -186,7 +282,8 @@ function trainMultiClassSVM(X_train, y_train, C, kernel, gamma, degree = 3, coef
 
   return {
     models,
-    svIndices: Array.from(allSvIndices),
+    svIndices,
+    support_vectors_,
     predictSample
   };
 }
@@ -458,9 +555,7 @@ window.predict = async function() {
 
   let prediction = 'setosa';
   if (currentTrainedSVM) {
-    const currentValX = getFeatureValue(activeFeatX);
-    const currentValY = getFeatureValue(activeFeatY);
-    const pred = currentTrainedSVM.predictSample([currentValX, currentValY]);
+    const pred = currentTrainedSVM.predictSample([sl, sw, pl, pw]);
     prediction = SPECIES_NAMES[pred.classIndex] || 'setosa';
   } else {
     try {
@@ -582,27 +677,34 @@ window.trainAndRenderBoundary = function() {
 
   const startTime = performance.now();
 
-  // 1. Chuẩn bị tập dữ liệu 2D thực tế từ 50 mẫu Iris Dataset
-  const X_2D = ACTIVE_IRIS_DATASET.map(d => [d[featXIdx], d[featYIdx]]);
+  // 1. Chuẩn bị tập dữ liệu 4D thực tế từ 60 mẫu Iris Dataset
+  const X_4D = ACTIVE_IRIS_DATASET.map(d => [d[0], d[1], d[2], d[3]]);
   const y_all = ACTIVE_IRIS_DATASET.map(d => d[4]);
 
-  // Huấn luyện Multi-class SVM (One-vs-Rest SMO)
-  const multiSVM = trainMultiClassSVM(X_2D, y_all, C, kernel, gamma, degree, 1.0);
+  // Tính giá trị trung bình (means) của 4 đặc trưng trên tập dữ liệu để cố định 2 feature không hiển thị
+  const featureMeans = [0, 1, 2, 3].map(featIdx => {
+    const sum = ACTIVE_IRIS_DATASET.reduce((acc, row) => acc + row[featIdx], 0);
+    return +(sum / ACTIVE_IRIS_DATASET.length).toFixed(4);
+  });
+
+  // Huấn luyện Multi-class SVM (One-vs-Rest SMO) với toàn bộ 4 features
+  const coef0 = (kernel === 'poly') ? 1.0 : 0.0;
+  const multiSVM = trainMultiClassSVM(X_4D, y_all, C, kernel, gamma, degree, coef0);
   currentTrainedSVM = multiSVM;
 
   const endTime = performance.now();
   const execTime = +(endTime - startTime).toFixed(2);
 
-  // 2. Đánh giá kiểm thử Confusion Matrix trên 50 mẫu
+  // 2. Đánh giá kiểm thử Confusion Matrix trên 60 mẫu cố định (20 mẫu mỗi loài) với 4 features
   let correct = 0;
   const confusion = [[0,0,0],[0,0,0],[0,0,0]];
-  X_2D.forEach((x, i) => {
-    const pred = multiSVM.predictSample(x).classIndex;
+  X_4D.forEach((x4, i) => {
+    const pred = multiSVM.predictSample(x4).classIndex;
     const trueC = y_all[i];
     confusion[trueC][pred]++;
     if (pred === trueC) correct++;
   });
-  const accuracy = +((correct / X_2D.length) * 100).toFixed(1);
+  const accuracy = +((correct / X_4D.length) * 100).toFixed(1);
 
   let sumP = 0, sumR = 0;
   for (let c = 0; c < 3; c++) {
@@ -616,31 +718,36 @@ window.trainAndRenderBoundary = function() {
   const recall = +(sumR / 3).toFixed(3);
   const f1 = +((2 * precision * recall) / (precision + recall || 1)).toFixed(3);
 
-  // 3. Tính toán Lưới Điểm (Mesh Grid) cho Decision Boundary thực tế
+  // 3. Tính toán Lưới Điểm (Mesh Grid) cho Decision Boundary 2D (chiếu từ model 4D)
   const allX = ACTIVE_IRIS_DATASET.map(d => d[featXIdx]);
   const allY = ACTIVE_IRIS_DATASET.map(d => d[featYIdx]);
   const minXRaw = Math.min(...allX), maxXRaw = Math.max(...allX);
   const minYRaw = Math.min(...allY), maxYRaw = Math.max(...allY);
-  const padX = (maxXRaw - minXRaw) * 0.1 || 0.5;
-  const padY = (maxYRaw - minYRaw) * 0.1 || 0.5;
+  const padX = +((maxXRaw - minXRaw) * 0.12).toFixed(2) || 0.5;
+  const padY = +((maxYRaw - minYRaw) * 0.12).toFixed(2) || 0.5;
 
   const xMin = Math.max(0, +(minXRaw - padX).toFixed(2));
   const xMax = +(maxXRaw + padX).toFixed(2);
   const yMin = Math.max(0, +(minYRaw - padY).toFixed(2));
   const yMax = +(maxYRaw + padY).toFixed(2);
 
-  const resX = 90;
-  const resY = 90;
+  const resX = 100;
+  const resY = 100;
   const stepX = (xMax - xMin) / resX;
   const stepY = (yMax - yMin) / resY;
 
+  // Chuyển đổi mỗi điểm trên grid 2D thành vector 4 features [mean0, mean1, mean2, mean3]
+  // trước khi đưa vào model 4D dự đoán
   const gridData = [];
   for (let i = 0; i <= resX; i++) {
     gridData[i] = [];
     const gx = xMin + i * stepX;
     for (let j = 0; j <= resY; j++) {
       const gy = yMin + j * stepY;
-      const pred = multiSVM.predictSample([gx, gy]);
+      const sample4D = [...featureMeans];
+      sample4D[featXIdx] = gx;
+      sample4D[featYIdx] = gy;
+      const pred = multiSVM.predictSample(sample4D);
       gridData[i][j] = pred.classIndex;
     }
   }
@@ -652,7 +759,8 @@ window.trainAndRenderBoundary = function() {
     resX, resY,
     featXIdx, featYIdx,
     kernel,
-    multiSVM
+    multiSVM,
+    featureMeans
   };
 
   // 4. Render Chart trực quan hóa Decision Boundary
@@ -717,8 +825,9 @@ function renderTrainingInlineResult(multiSVM, kernel, C, gamma, degree, accuracy
 
   const currentX = getFeatureValue(activeFeatX);
   const currentY = getFeatureValue(activeFeatY);
-  const pred2D = multiSVM.predictSample([currentX, currentY]);
-  const predSpecies = SPECIES_NAMES[pred2D.classIndex] || 'setosa';
+  const current4D = [inputs.sl, inputs.sw, inputs.pl, inputs.pw];
+  const pred4D = multiSVM.predictSample(current4D);
+  const predSpecies = SPECIES_NAMES[pred4D.classIndex] || 'setosa';
 
   let flowerVi = 'Iris Setosa';
   let flowerTagColor = '#15803d';
@@ -796,7 +905,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
   const versiPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 1).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Versicolor', species: 'Versicolor' }));
   const virgiPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 2).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Virginica', species: 'Virginica' }));
 
-  // Support Vectors thực tế từ 50 mẫu SVM SMO
+  // Support Vectors thực tế từ model 4D chiếu xuống 2D
   const svPoints = multiSVM.svIndices.map(idx => {
     const row = ACTIVE_IRIS_DATASET[idx % ACTIVE_IRIS_DATASET.length];
     return {
@@ -810,9 +919,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
   const currentX = getFeatureValue(fX);
   const currentY = getFeatureValue(fY);
 
-  if (decisionChartInstance) decisionChartInstance.destroy();
-
-  // Custom Chart.js Plugin để vẽ Background Decision Regions và Decision Boundary Lines
+  // Custom Chart.js Plugin để vẽ Background Decision Regions dạng Lưới Ô Vuông (Mesh Grid)
   const decisionBoundaryPlugin = {
     id: 'decisionBoundaryRenderer',
     beforeDatasetsDraw(chart) {
@@ -828,7 +935,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
       ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
       ctx.clip();
 
-      // A. VÙNG PHÂN LOẠI (BACKGROUND COLOR MESH REGIONS)
+      // A. VÙNG PHÂN LOẠI DẠNG LƯỚI Ô VUÔNG (BACKGROUND MESH GRID REGIONS)
       const regionColors = [
         'rgba(22, 163, 74, 0.16)',   // Setosa (Xanh lá tươi sáng)
         'rgba(217, 119, 6, 0.16)',   // Versicolor (Vàng hổ phách ấm áp)
@@ -857,7 +964,7 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
         }
       }
 
-      // B. ĐƯỜNG RANH GIỚI QUYẾT ĐỊNH (DECISION BOUNDARY CONTOURS)
+      // B. ĐƯỜNG RANH GIỚI QUYẾT ĐỊNH ZÍC ZẮC THEO LƯỚI (DECISION BOUNDARY CONTOURS)
       ctx.lineWidth = 2.5;
       ctx.setLineDash([6, 4]);
 
@@ -903,6 +1010,33 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
       ctx.restore();
     }
   };
+
+  // Tái sử dụng chart instance để animate cập nhật mượt mà, không bị giật/chớp canvas
+  if (decisionChartInstance) {
+    decisionChartInstance.options.scales.x.min = cachedMeshGrid ? cachedMeshGrid.xMin : undefined;
+    decisionChartInstance.options.scales.x.max = cachedMeshGrid ? cachedMeshGrid.xMax : undefined;
+    decisionChartInstance.options.scales.x.title.text = `${featXName} (cm)`;
+
+    decisionChartInstance.options.scales.y.min = cachedMeshGrid ? cachedMeshGrid.yMin : undefined;
+    decisionChartInstance.options.scales.y.max = cachedMeshGrid ? cachedMeshGrid.yMax : undefined;
+    decisionChartInstance.options.scales.y.title.text = `${featYName} (cm)`;
+
+    decisionChartInstance.data.datasets[0].data = setosaPoints;
+    decisionChartInstance.data.datasets[0].label = `🌿 Setosa (${setosaPoints.length})`;
+    decisionChartInstance.data.datasets[1].data = versiPoints;
+    decisionChartInstance.data.datasets[1].label = `🌼 Versicolor (${versiPoints.length})`;
+    decisionChartInstance.data.datasets[2].data = virgiPoints;
+    decisionChartInstance.data.datasets[2].label = `🌸 Virginica (${virgiPoints.length})`;
+    decisionChartInstance.data.datasets[3].data = svPoints;
+    decisionChartInstance.data.datasets[3].label = `⭐ Support Vectors (${svPoints.length})`;
+    decisionChartInstance.data.datasets[4].data = [{ x: currentX, y: currentY, name: 'Điểm đang kiểm tra' }];
+
+    decisionChartInstance.update({
+      duration: 400,
+      easing: 'easeOutQuart'
+    });
+    return;
+  }
 
   decisionChartInstance = new Chart(ctx, {
     type: 'scatter',
@@ -956,7 +1090,10 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 250 },
+      animation: {
+        duration: 400,
+        easing: 'easeOutQuart'
+      },
       scales: {
         x: {
           title: { display: true, text: `${featXName} (cm)`, font: { size: 13, weight: '700' }, color: '#1e1b4b' },

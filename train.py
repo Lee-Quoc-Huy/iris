@@ -86,6 +86,16 @@ class PrecomputedSVCWrapper:
         K = np.dot(X, self.X_train.T)
         return self.model.decision_function(K)
 
+    @property
+    def support_vectors_(self):
+        if self.X_train is not None and hasattr(self.model, 'support_'):
+            return self.X_train[self.model.support_]
+        return np.empty((0, 4))
+
+    @property
+    def support_(self):
+        return self.model.support_
+
 
 # ==============================================================================
 # 2. Tải Dataset Iris và chia tập Train / Test
