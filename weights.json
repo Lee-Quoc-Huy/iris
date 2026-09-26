@@ -1,39 +1,7 @@
 {
   "models_metrics": {
-    "rbf": {
-      "name": "RBF (Radial Basis - Phi tuyến)",
-      "kernel": "rbf",
-      "params": {
-        "kernel": "rbf",
-        "C": 1.0,
-        "gamma": 0.064095,
-        "degree": null,
-        "coef0": 0.0
-      },
-      "accuracy": 0.9667,
-      "precision": 0.9697,
-      "recall": 0.9667,
-      "f1_score": 0.9666,
-      "confusion_matrix": [
-        [
-          10,
-          0,
-          0
-        ],
-        [
-          0,
-          9,
-          1
-        ],
-        [
-          0,
-          0,
-          10
-        ]
-      ]
-    },
     "linear": {
-      "name": "Linear (Tuyến tính phẳng)",
+      "name": "SVM (Linear - Tuyến tính)",
       "kernel": "linear",
       "params": {
         "kernel": "linear",
@@ -46,6 +14,7 @@
       "precision": 1.0,
       "recall": 1.0,
       "f1_score": 1.0,
+      "support_vectors_count": 23,
       "confusion_matrix": [
         [
           10,
@@ -62,22 +31,25 @@
           0,
           10
         ]
-      ]
+      ],
+      "train_time_ms": 1.43,
+      "pred_time_ms": 0.23
     },
-    "poly": {
-      "name": "Polynomial (Đa thức bậc 3)",
-      "kernel": "poly",
+    "rbf": {
+      "name": "SVM (RBF - Phi tuyến Gaussian)",
+      "kernel": "rbf",
       "params": {
-        "kernel": "poly",
+        "kernel": "rbf",
         "C": 1.0,
-        "gamma": 0.064095,
-        "degree": 3,
-        "coef0": 1.0
+        "gamma": "scale",
+        "degree": null,
+        "coef0": 0.0
       },
       "accuracy": 0.9667,
       "precision": 0.9697,
       "recall": 0.9667,
       "f1_score": 0.9666,
+      "support_vectors_count": 49,
       "confusion_matrix": [
         [
           10,
@@ -94,15 +66,52 @@
           0,
           10
         ]
-      ]
+      ],
+      "train_time_ms": 1.19,
+      "pred_time_ms": 0.23
+    },
+    "poly": {
+      "name": "SVM (Polynomial - Đa thức bậc 3)",
+      "kernel": "poly",
+      "params": {
+        "kernel": "poly",
+        "C": 1.0,
+        "gamma": "scale",
+        "degree": 3,
+        "coef0": 1.0
+      },
+      "accuracy": 0.9667,
+      "precision": 0.9697,
+      "recall": 0.9667,
+      "f1_score": 0.9666,
+      "support_vectors_count": 16,
+      "confusion_matrix": [
+        [
+          10,
+          0,
+          0
+        ],
+        [
+          0,
+          9,
+          1
+        ],
+        [
+          0,
+          0,
+          10
+        ]
+      ],
+      "train_time_ms": 1.17,
+      "pred_time_ms": 0.17
     },
     "sigmoid": {
-      "name": "Sigmoid (Hàm Hyperbolic Tangent)",
+      "name": "SVM (Sigmoid - Hàm Hyperbolic)",
       "kernel": "sigmoid",
       "params": {
         "kernel": "sigmoid",
         "C": 1.0,
-        "gamma": 0.064095,
+        "gamma": "scale",
         "degree": null,
         "coef0": 0.0
       },
@@ -110,6 +119,7 @@
       "precision": 0.05,
       "recall": 0.1,
       "f1_score": 0.0667,
+      "support_vectors_count": 120,
       "confusion_matrix": [
         [
           3,
@@ -126,10 +136,12 @@
           0,
           0
         ]
-      ]
+      ],
+      "train_time_ms": 1.96,
+      "pred_time_ms": 0.32
     },
     "precomputed": {
-      "name": "Precomputed (Tích vô hướng ma trận Gram)",
+      "name": "SVM (Precomputed - Ma trận Gram)",
       "kernel": "precomputed",
       "params": {
         "kernel": "precomputed",
@@ -142,6 +154,7 @@
       "precision": 1.0,
       "recall": 1.0,
       "f1_score": 1.0,
+      "support_vectors_count": 23,
       "confusion_matrix": [
         [
           10,
@@ -158,7 +171,9 @@
           0,
           10
         ]
-      ]
+      ],
+      "train_time_ms": 1.17,
+      "pred_time_ms": 0.18
     }
   },
   "classes": [
@@ -175,5 +190,12 @@
   "test_size": 0.2,
   "random_state": 42,
   "stratify": true,
-  "default_kernel": "linear"
+  "trained_at": "2026-09-26 12:38:44",
+  "dataset_info": {
+    "total_samples": 150,
+    "train_samples": 120,
+    "test_samples": 30,
+    "features_count": 4,
+    "classes_count": 3
+  }
 }

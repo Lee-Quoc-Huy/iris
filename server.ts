@@ -23,17 +23,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Load metrics from weights.json if present
-let METRICS: Record<string, any> = {};
-const weightsPath = path.join(__dirname, 'weights.json');
-try {
-  if (fs.existsSync(weightsPath)) {
-    const raw = fs.readFileSync(weightsPath, 'utf-8');
-    const parsed = JSON.parse(raw);
-    METRICS = parsed.models_metrics || {};
+// Load metrics from metrics.json or weights.json
+function getMetricsData(): Record<string, any> {
+  const metricsPath = path.join(__dirname, 'metrics.json');
+  const weightsPath = path.join(__dirname, 'weights.json');
+  try {
+    if (fs.existsSync(metricsPath)) {
+      const raw = fs.readFileSync(metricsPath, 'utf-8');
+      return JSON.parse(raw);
+    } else if (fs.existsSync(weightsPath)) {
+      const raw = fs.readFileSync(weightsPath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      return parsed.models_metrics || {};
+    }
+  } catch (err) {
+    console.warn('[server.ts] Error reading metrics data:', err);
   }
-} catch (err) {
-  console.warn('[server.ts] Error reading weights.json:', err);
+  return {};
 }
 
 const SPECIES: Record<number, string> = {
@@ -87,16 +93,17 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/metrics', (req, res) => {
+  const data = getMetricsData();
   const kernel = req.query.kernel as string | undefined;
-  if (kernel && METRICS[kernel.toLowerCase()]) {
-    return res.json(METRICS[kernel.toLowerCase()]);
+  if (kernel && data[kernel.toLowerCase()]) {
+    return res.json(data[kernel.toLowerCase()]);
   }
 
   res.json({
     active_models: AVAILABLE_KERNELS,
-    summary: METRICS,
-    default: METRICS['linear'] || {
-      model: 'Linear SVM',
+    summary: data,
+    default: data['linear'] || {
+      name: 'SVM (Linear - Tuyến tính)',
       accuracy: 1.0,
       precision: 1.0,
       recall: 1.0,
@@ -168,7 +175,54 @@ app.get('/random-sample', (req, res) => {
   });
 });
 
+// Direct route to serve Admin Avatar from src/assets/images/ (or fallback locations) with no-cache
+app.get(
+  [
+    '/images/admin_avatar.jpg',
+    '/images/admin_avatar.png',
+    '/images/admin_avatar.jpeg',
+    '/images/admin_avatar.webp',
+    '/api/admin-avatar',
+    '/admin_avatar.jpg',
+  ],
+  (req, res) => {
+    const candidatePaths = [
+      path.join(__dirname, 'src', 'assets', 'images', 'admin_avatar.jpg'),
+      path.join(__dirname, 'src', 'assets', 'images', 'admin_avatar.png'),
+      path.join(__dirname, 'src', 'assets', 'images', 'admin_avatar.jpeg'),
+      path.join(__dirname, 'src', 'assets', 'images', 'admin_avatar.webp'),
+      path.join(__dirname, 'src', 'asscts', 'images', 'admin_avatar.jpg'),
+      path.join(__dirname, 'src', 'asscts', 'images', 'admin_avatar.png'),
+      path.join(__dirname, 'public', 'images', 'admin_avatar.jpg'),
+      path.join(__dirname, 'images', 'admin_avatar.jpg'),
+    ];
+
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        return res.sendFile(p);
+      }
+    }
+
+    const fallback = path.join(__dirname, 'public', 'images', 'setosa.jpg');
+    if (fs.existsSync(fallback)) {
+      return res.sendFile(fallback);
+    }
+    res.status(404).send('Avatar not found');
+  }
+);
+
 // Serve images statically as fallback
+const srcAssetsImagesPath = path.join(__dirname, 'src', 'assets', 'images');
+if (fs.existsSync(srcAssetsImagesPath)) {
+  app.use('/src/assets/images', express.static(srcAssetsImagesPath));
+}
+const srcAssctsImagesPath = path.join(__dirname, 'src', 'asscts', 'images');
+if (fs.existsSync(srcAssctsImagesPath)) {
+  app.use('/src/asscts/images', express.static(srcAssctsImagesPath));
+}
 const imagesPath = path.join(__dirname, 'images');
 const publicImagesPath = path.join(__dirname, 'public', 'images');
 if (fs.existsSync(publicImagesPath)) {

@@ -420,11 +420,11 @@
                 <div class="h-[2px] w-12 bg-gradient-to-r from-[#e8702a] to-[#f2c14e] rounded-full mt-3"></div>
             </div>
 
-            <!-- GRID 2 CỘT: TRÁI INPUTS, PHẢI KẾT QUẢ -->
-            <div class="grid lg:grid-cols-[1.2fr_1fr] gap-6 mb-8">
+            <!-- GRID 2 CỘT: TRÁI INPUTS, PHẢI KẾT QUẢ (KHỚP KHUNG HOÀN TOÀN) -->
+            <div class="grid lg:grid-cols-2 gap-6 sm:gap-8 items-stretch mb-8">
                 <!-- CỘT TRÁI: FORM 4 ĐẶC TRƯNG -->
-                <div class="iris-glass rounded-3xl p-6 sm:p-8">
-                    <div class="flex items-center justify-between flex-wrap gap-3 mb-6 pb-4 border-b border-white/10">
+                <div class="iris-glass rounded-3xl p-6 sm:p-7 flex flex-col justify-between h-full shadow-xl">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-4 pb-3 border-b border-white/10">
                         <div class="flex items-center gap-2">
                             <span class="text-lg">🔮</span>
                             <h3 class="text-base font-semibold text-white">Thông số 4 đặc trưng đầu vào</h3>
@@ -437,66 +437,106 @@
                     </div>
 
                     <!-- 4 INPUT RANGE + NUMBER -->
-                    <div class="space-y-4">
+                    <div class="space-y-3.5 my-auto">
                         <!-- Sepal Length -->
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1.5">
-                                <span class="font-medium text-white/90">Sepal length <span class="text-white/50 text-[11px]">(Chiều dài đài)</span></span>
+                        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-medium text-white/95 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-[#e8702a]"></span>
+                                    Sepal length <span class="text-white/50 text-[11px] font-normal">(Chiều dài đài)</span>
+                                </span>
+                                <span class="text-[11px] text-white/40 font-mono">Phạm vi: 4.0 – 8.0 cm</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <input id="range_sepal_length" type="range" min="4" max="8" step="0.1" value="5.1" class="flex-1 accent-[#e8702a] cursor-pointer" oninput="syncInput('range_sepal_length', 'sepal_length')">
-                                <div class="flex items-center bg-white/[0.08] border border-white/20 rounded-full px-3 py-1 text-xs tabular-nums text-white w-24 justify-end">
-                                    <input id="sepal_length" type="number" min="4" max="8" step="0.1" value="5.1" class="w-12 bg-transparent text-right outline-none font-semibold text-white" oninput="syncRange('sepal_length', 'range_sepal_length')">
-                                    <span class="text-white/50 ml-1">cm</span>
+                            <div class="flex items-center gap-3.5">
+                                <div class="flex-1 relative flex flex-col justify-center">
+                                    <input id="range_sepal_length" type="range" min="4" max="8" step="0.1" value="5.1" class="feature-slider" oninput="syncInput('range_sepal_length', 'sepal_length')">
+                                    <div class="flex justify-between text-[10px] text-white/40 mt-1 font-mono">
+                                        <span>4.0 cm</span>
+                                        <span>8.0 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-white/[0.07] hover:bg-white/[0.12] focus-within:border-[#f2c14e] focus-within:ring-2 focus-within:ring-[#f2c14e]/20 border border-white/20 rounded-2xl px-3 py-1.5 text-xs tabular-nums text-white w-28 justify-end transition-all shadow-inner">
+                                    <input id="sepal_length" type="number" min="4" max="8" step="0.1" value="5.1" class="w-14 bg-transparent text-right outline-none font-bold text-white text-sm" oninput="syncRange('sepal_length', 'range_sepal_length')">
+                                    <span class="text-[#f2c14e] font-semibold ml-1.5 text-xs">cm</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Sepal Width -->
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1.5">
-                                <span class="font-medium text-white/90">Sepal width <span class="text-white/50 text-[11px]">(Chiều rộng đài)</span></span>
+                        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-medium text-white/95 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-[#f2c14e]"></span>
+                                    Sepal width <span class="text-white/50 text-[11px] font-normal">(Chiều rộng đài)</span>
+                                </span>
+                                <span class="text-[11px] text-white/40 font-mono">Phạm vi: 2.0 – 4.5 cm</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <input id="range_sepal_width" type="range" min="2" max="4.5" step="0.1" value="3.5" class="flex-1 accent-[#e8702a] cursor-pointer" oninput="syncInput('range_sepal_width', 'sepal_width')">
-                                <div class="flex items-center bg-white/[0.08] border border-white/20 rounded-full px-3 py-1 text-xs tabular-nums text-white w-24 justify-end">
-                                    <input id="sepal_width" type="number" min="2" max="4.5" step="0.1" value="3.5" class="w-12 bg-transparent text-right outline-none font-semibold text-white" oninput="syncRange('sepal_width', 'range_sepal_width')">
-                                    <span class="text-white/50 ml-1">cm</span>
+                            <div class="flex items-center gap-3.5">
+                                <div class="flex-1 relative flex flex-col justify-center">
+                                    <input id="range_sepal_width" type="range" min="2" max="4.5" step="0.1" value="3.5" class="feature-slider" oninput="syncInput('range_sepal_width', 'sepal_width')">
+                                    <div class="flex justify-between text-[10px] text-white/40 mt-1 font-mono">
+                                        <span>2.0 cm</span>
+                                        <span>4.5 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-white/[0.07] hover:bg-white/[0.12] focus-within:border-[#f2c14e] focus-within:ring-2 focus-within:ring-[#f2c14e]/20 border border-white/20 rounded-2xl px-3 py-1.5 text-xs tabular-nums text-white w-28 justify-end transition-all shadow-inner">
+                                    <input id="sepal_width" type="number" min="2" max="4.5" step="0.1" value="3.5" class="w-14 bg-transparent text-right outline-none font-bold text-white text-sm" oninput="syncRange('sepal_width', 'range_sepal_width')">
+                                    <span class="text-[#f2c14e] font-semibold ml-1.5 text-xs">cm</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Petal Length -->
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1.5">
-                                <span class="font-medium text-white/90">Petal length <span class="text-white/50 text-[11px]">(Chiều dài cánh)</span></span>
+                        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-medium text-white/95 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-[#4ade80]"></span>
+                                    Petal length <span class="text-white/50 text-[11px] font-normal">(Chiều dài cánh)</span>
+                                </span>
+                                <span class="text-[11px] text-white/40 font-mono">Phạm vi: 1.0 – 7.0 cm</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <input id="range_petal_length" type="range" min="1" max="7" step="0.1" value="1.4" class="flex-1 accent-[#e8702a] cursor-pointer" oninput="syncInput('range_petal_length', 'petal_length')">
-                                <div class="flex items-center bg-white/[0.08] border border-white/20 rounded-full px-3 py-1 text-xs tabular-nums text-white w-24 justify-end">
-                                    <input id="petal_length" type="number" min="1" max="7" step="0.1" value="1.4" class="w-12 bg-transparent text-right outline-none font-semibold text-white" oninput="syncRange('petal_length', 'range_petal_length')">
-                                    <span class="text-white/50 ml-1">cm</span>
+                            <div class="flex items-center gap-3.5">
+                                <div class="flex-1 relative flex flex-col justify-center">
+                                    <input id="range_petal_length" type="range" min="1" max="7" step="0.1" value="1.4" class="feature-slider" oninput="syncInput('range_petal_length', 'petal_length')">
+                                    <div class="flex justify-between text-[10px] text-white/40 mt-1 font-mono">
+                                        <span>1.0 cm</span>
+                                        <span>7.0 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-white/[0.07] hover:bg-white/[0.12] focus-within:border-[#f2c14e] focus-within:ring-2 focus-within:ring-[#f2c14e]/20 border border-white/20 rounded-2xl px-3 py-1.5 text-xs tabular-nums text-white w-28 justify-end transition-all shadow-inner">
+                                    <input id="petal_length" type="number" min="1" max="7" step="0.1" value="1.4" class="w-14 bg-transparent text-right outline-none font-bold text-white text-sm" oninput="syncRange('petal_length', 'range_petal_length')">
+                                    <span class="text-[#f2c14e] font-semibold ml-1.5 text-xs">cm</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Petal Width -->
-                        <div>
-                            <div class="flex justify-between items-center text-xs mb-1.5">
-                                <span class="font-medium text-white/90">Petal width <span class="text-white/50 text-[11px]">(Chiều rộng cánh)</span></span>
+                        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all">
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <span class="font-medium text-white/95 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-[#c084fc]"></span>
+                                    Petal width <span class="text-white/50 text-[11px] font-normal">(Chiều rộng cánh)</span>
+                                </span>
+                                <span class="text-[11px] text-white/40 font-mono">Phạm vi: 0.1 – 2.5 cm</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <input id="range_petal_width" type="range" min="0.1" max="2.5" step="0.1" value="0.2" class="flex-1 accent-[#e8702a] cursor-pointer" oninput="syncInput('range_petal_width', 'petal_width')">
-                                <div class="flex items-center bg-white/[0.08] border border-white/20 rounded-full px-3 py-1 text-xs tabular-nums text-white w-24 justify-end">
-                                    <input id="petal_width" type="number" min="0.1" max="2.5" step="0.1" value="0.2" class="w-12 bg-transparent text-right outline-none font-semibold text-white" oninput="syncRange('petal_width', 'range_petal_width')">
-                                    <span class="text-white/50 ml-1">cm</span>
+                            <div class="flex items-center gap-3.5">
+                                <div class="flex-1 relative flex flex-col justify-center">
+                                    <input id="range_petal_width" type="range" min="0.1" max="2.5" step="0.1" value="0.2" class="feature-slider" oninput="syncInput('range_petal_width', 'petal_width')">
+                                    <div class="flex justify-between text-[10px] text-white/40 mt-1 font-mono">
+                                        <span>0.1 cm</span>
+                                        <span>2.5 cm</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-white/[0.07] hover:bg-white/[0.12] focus-within:border-[#f2c14e] focus-within:ring-2 focus-within:ring-[#f2c14e]/20 border border-white/20 rounded-2xl px-3 py-1.5 text-xs tabular-nums text-white w-28 justify-end transition-all shadow-inner">
+                                    <input id="petal_width" type="number" min="0.1" max="2.5" step="0.1" value="0.2" class="w-14 bg-transparent text-right outline-none font-bold text-white text-sm" oninput="syncRange('petal_width', 'range_petal_width')">
+                                    <span class="text-[#f2c14e] font-semibold ml-1.5 text-xs">cm</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- NÚT HÀNH ĐỘNG -->
-                    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                    <div class="mt-6 pt-2 flex flex-col sm:flex-row gap-3">
                         <button id="predictBtn" type="button" onclick="predict()" class="flex-1 py-3 px-6 rounded-full bg-[#e8702a] hover:bg-[#d2611f] active:scale-[0.98] text-white font-medium text-sm transition-all shadow-lg shadow-[#e8702a]/25 flex items-center justify-center gap-2">
                             <span>🌐</span> Phân loại bằng SVM
                         </button>
@@ -506,10 +546,10 @@
                     </div>
                 </div>
 
-                <!-- CỘT PHẢI: KẾT QUẢ PHÂN LOẠI & TÓM TẮT -->
-                <div class="flex flex-col gap-6">
+                <!-- CỘT PHẢI: KẾT QUẢ PHÂN LOẠI & TÓM TẮT THÔNG SỐ (KHỚP KHUNG) -->
+                <div class="flex flex-col gap-6 h-full justify-between">
                     <!-- THẺ KẾT QUẢ HOA -->
-                    <div class="iris-glass rounded-3xl p-6 sm:p-7 flex items-center justify-between border-l-4 border-l-[#4ade80] relative overflow-hidden">
+                    <div class="iris-glass rounded-3xl p-6 sm:p-7 flex items-center justify-between border-l-4 border-l-[#4ade80] relative overflow-hidden shadow-xl shrink-0">
                         <div>
                             <div class="text-[11px] font-bold text-[#4ade80] uppercase tracking-wider mb-1 flex items-center gap-1.5">
                                 <span>✓</span> KẾT QUẢ PHÂN LOẠI
@@ -517,33 +557,56 @@
                             <div id="flowerName" class="font-playfair text-3xl sm:text-4xl text-white">
                                 Iris Setosa
                             </div>
+                            <div class="text-xs text-white/60 mt-1 flex items-center gap-1.5">
+                                <span>🎯 Mô hình SVM:</span>
+                                <span class="text-[#4ade80] font-bold">Chính xác</span>
+                            </div>
                         </div>
                         <img id="flowerImage" src="/images/setosa.jpg" alt="Iris" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border border-white/20 shadow-xl" onerror="this.src='/images/setosa.svg'" />
                     </div>
 
-                    <!-- BẢNG TÓM TẮT 4 THÔNG SỐ ĐÃ NHẬP -->
-                    <div class="iris-glass rounded-3xl p-6 flex-1 flex flex-col justify-between">
-                        <div class="flex items-center gap-2 pb-3 border-b border-white/10 mb-2">
-                            <span>📋</span>
-                            <h4 class="text-xs font-semibold uppercase tracking-wider text-white/80">Thông số mẫu nhận diện</h4>
+                    <!-- BẢNG TÓM TẮT 4 THÔNG SỐ ĐÃ NHẬP (KHỚP KHUNG HOÀN TOÀN) -->
+                    <div class="iris-glass rounded-3xl p-6 sm:p-7 flex-1 flex flex-col justify-between shadow-xl">
+                        <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span>📋</span>
+                                <h4 class="text-xs font-semibold uppercase tracking-wider text-white/80">Thông số mẫu nhận diện</h4>
+                            </div>
+                            <span class="text-[11px] text-white/40 font-mono">Chuẩn hóa 4D</span>
                         </div>
-                        <div class="divide-y divide-white/10 text-xs">
-                            <div class="py-2.5 flex justify-between">
-                                <span class="text-white/60">Sepal length</span>
-                                <span id="res_sepal_length" class="font-mono tabular-nums font-semibold text-white">5.1 cm</span>
+                        <div class="divide-y divide-white/10 text-xs my-auto">
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-white/70 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-[#e8702a]"></span>
+                                    Sepal length (Đài dài)
+                                </span>
+                                <span id="res_sepal_length" class="font-mono tabular-nums font-bold text-white text-sm">5.1 cm</span>
                             </div>
-                            <div class="py-2.5 flex justify-between">
-                                <span class="text-white/60">Sepal width</span>
-                                <span id="res_sepal_width" class="font-mono tabular-nums font-semibold text-white">3.5 cm</span>
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-white/70 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-[#f2c14e]"></span>
+                                    Sepal width (Đài rộng)
+                                </span>
+                                <span id="res_sepal_width" class="font-mono tabular-nums font-bold text-white text-sm">3.5 cm</span>
                             </div>
-                            <div class="py-2.5 flex justify-between">
-                                <span class="text-white/60">Petal length</span>
-                                <span id="res_petal_length" class="font-mono tabular-nums font-semibold text-white">1.4 cm</span>
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-white/70 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-[#4ade80]"></span>
+                                    Petal length (Cánh dài)
+                                </span>
+                                <span id="res_petal_length" class="font-mono tabular-nums font-bold text-white text-sm">1.4 cm</span>
                             </div>
-                            <div class="py-2.5 flex justify-between">
-                                <span class="text-white/60">Petal width</span>
-                                <span id="res_petal_width" class="font-mono tabular-nums font-semibold text-white">0.2 cm</span>
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-white/70 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-[#c084fc]"></span>
+                                    Petal width (Cánh rộng)
+                                </span>
+                                <span id="res_petal_width" class="font-mono tabular-nums font-bold text-white text-sm">0.2 cm</span>
                             </div>
+                        </div>
+                        <div class="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
+                            <span>Phân loại: Support Vector Machine</span>
+                            <span class="text-[#4ade80] font-semibold">● Đã tối ưu</span>
                         </div>
                     </div>
                 </div>
@@ -614,32 +677,6 @@
                             <label class="block text-xs font-semibold text-white/80 mb-1.5">Degree (d):</label>
                             <input type="number" id="degreeInput" class="w-full bg-[#101114] border border-white/20 rounded-2xl px-3 py-2 text-xs text-white font-mono outline-none" value="3" min="1" max="6">
                         </div>
-                    </div>
-                </div>
-
-                <!-- CHỌN 4 ĐẶC TRƯNG MÔ HÌNH (YÊU CẦU II.7: ĐẦY ĐỦ 4 THÔNG SỐ) -->
-                <div class="mb-6 p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-xs font-medium text-white/90">
-                        <span>✨</span>
-                        <span>Đặc trưng tham gia quyết định (chọn cả 4 hoặc theo yêu cầu):</span>
-                    </div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <label class="inline-flex items-center gap-2 text-xs text-white cursor-pointer px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15">
-                            <input type="checkbox" id="featCheck_0" checked class="accent-[#e8702a]">
-                            <span>Sepal Length</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-xs text-white cursor-pointer px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15">
-                            <input type="checkbox" id="featCheck_1" checked class="accent-[#e8702a]">
-                            <span>Sepal Width</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-xs text-white cursor-pointer px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15">
-                            <input type="checkbox" id="featCheck_2" checked class="accent-[#e8702a]">
-                            <span>Petal Length</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-xs text-white cursor-pointer px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15">
-                            <input type="checkbox" id="featCheck_3" checked class="accent-[#e8702a]">
-                            <span>Petal Width</span>
-                        </label>
                     </div>
                 </div>
 
@@ -728,220 +765,223 @@
         </section>
 
         <!-- ============================================================ -->
-        <!-- 2. 🔮 ĐOÁN HOA (THỬ THÁCH CON NGƯỜI VS AI SVM) -->
+        <!-- 2. 🔮 ĐOÁN HOA (THỬ THÁCH CON NGƯỜI VS AI SVM - NẰM TRỌN TRONG 1 KHUNG HÌNH) -->
         <!-- ============================================================ -->
-        <section id="guessPage" class="page-view max-w-6xl mx-auto px-5 sm:px-8 pt-28 pb-20">
-            <div class="mb-8">
-                <div class="text-xs font-semibold text-[#f2c14e] tracking-wider uppercase mb-1">Mục II</div>
-                <h1 class="text-3xl sm:text-5xl font-playfair text-white">Thử thách: Bạn đoán trước SVM!</h1>
-                <p class="text-sm text-white/70 max-w-xl mt-2 leading-relaxed">
-                    Hệ thống tự động sinh một mẫu hoa Iris ngẫu nhiên. Quan sát 4 thông số hình thái & vị trí trên không gian 2D để đưa ra phán đoán trước AI!
-                </p>
-                <div class="h-[2px] w-12 bg-gradient-to-r from-[#e8702a] to-[#f2c14e] rounded-full mt-3"></div>
-            </div>
-
-            <div class="iris-glass rounded-3xl p-6 sm:p-8 mb-8">
-                <!-- SCORE BAR -->
-                <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white/[0.04] border border-white/10 mb-8">
-                    <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-xs font-medium text-white/90">
-                        <span>🎯 Tổng lượt chơi: <b id="guessTotalPlays" class="text-white font-mono font-bold text-sm">0</b></span>
-                        <span class="text-[#4ade80]">✅ Đoán đúng: <b id="guessCorrectPlays" class="font-mono font-bold text-sm">0</b></span>
-                        <span class="text-red-400">❌ Chưa đúng: <b id="guessWrongPlays" class="font-mono font-bold text-sm">0</b></span>
-                        <span>⚡ Tỉ lệ chính xác: <b id="guessAccuracy" class="text-[#f2c14e] font-mono font-bold text-sm">0%</b></span>
+        <section id="guessPage" class="page-view max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-4">
+            <!-- THANH TIÊU ĐỀ & ĐIỂM SỐ KẾT HỢP GỌN GÀNG (KHÔNG CHIẾM DIỆN TÍCH) -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#e8702a] to-[#f2c14e] text-black font-bold flex items-center justify-center text-sm shadow-md">🔮</span>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold text-white leading-tight">Thử thách: Bạn đoán trước AI (SVM)</h1>
+                        <p class="text-[11px] text-white/60">Quan sát 4 thông số & biểu đồ 2D để phán đoán trước mô hình SVM</p>
                     </div>
-                    <button type="button" class="px-3 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-xs text-white/70" onclick="resetGuessScore()">🔄 Đặt lại điểm</button>
                 </div>
 
-                <!-- KHU VỰC 1: THÔNG SỐ MẪU NGẪU NHIÊN & CHỌN ĐẶC TRƯNG ĐỂ CHƠI -->
-                <div class="mb-8">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
-                        <div>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-white/90 flex items-center gap-1.5">
-                                <span>📋</span> Thông số mẫu hoa ngẫu nhiên:
-                            </h3>
-                            <p class="text-[11px] text-white/50 mt-0.5">Nhấp vào thẻ hoặc dùng menu để đổi 2 đặc trưng quan sát trên biểu đồ</p>
+                <!-- SCORE BAR COMPACT -->
+                <div class="flex items-center gap-3 p-1.5 px-3 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white/90">
+                    <span class="text-white/70">🎯 Lượt: <b id="guessTotalPlays" class="text-white font-mono font-bold">0</b></span>
+                    <span class="text-white/30">|</span>
+                    <span class="text-[#4ade80]">✅ Đúng: <b id="guessCorrectPlays" class="font-mono font-bold">0</b></span>
+                    <span class="text-white/30">|</span>
+                    <span class="text-red-400">❌ Sai: <b id="guessWrongPlays" class="font-mono font-bold">0</b></span>
+                    <span class="text-white/30">|</span>
+                    <span class="text-[#f2c14e]">⚡ <b id="guessAccuracy" class="font-mono font-bold">0%</b></span>
+                    <button type="button" class="ml-1 px-2 py-0.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.18] text-[10px] text-white/70 transition-all" onclick="resetGuessScore()" title="Đặt lại điểm số">🔄 Đặt lại</button>
+                </div>
+            </div>
+
+            <!-- TOÀN BỘ TRÒ CHƠI GÓI GỌN TRONG 1 KHUNG DUY NHẤT -->
+            <div class="iris-glass rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
+                <!-- KHỐI 1: THÔNG SỐ 4 ĐẶC TRƯNG (TRÁI) & BIỂU ĐỒ VỊ TRÍ 2D (PHẢI) -->
+                <div>
+                    <!-- THANH ĐIỀU KHIỂN CHỌN ĐẶC TRƯNG TRỤC X & TRỤC Y VÀ NÚT SINH MẪU -->
+                    <div class="flex items-center justify-between flex-wrap gap-2 mb-2.5 pb-2 border-b border-white/10">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-bold text-white flex items-center gap-1">
+                                <span>📋</span> Thông số mẫu:
+                            </span>
+                            
+                            <!-- THANH CHỌN 2 TRỤC QUAN SÁT TRÊN BẢNG VẼ -->
+                            <div class="flex items-center gap-1.5 bg-black/40 border border-indigo-500/40 px-2 py-0.5 rounded-xl text-[11px]">
+                                <span class="text-indigo-400 font-bold text-[10px]">Trục X:</span>
+                                <select id="guessAxisXSelect" class="bg-transparent text-white text-[11px] outline-none cursor-pointer font-medium" onchange="handleGuessAxisChange()">
+                                    <option value="0" class="bg-[#101114]">Sepal Length (Đài - Dài)</option>
+                                    <option value="1" class="bg-[#101114]">Sepal Width (Đài - Rộng)</option>
+                                    <option value="2" selected class="bg-[#101114]">Petal Length (Cánh - Dài)</option>
+                                    <option value="3" class="bg-[#101114]">Petal Width (Cánh - Rộng)</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 bg-black/40 border border-purple-500/40 px-2 py-0.5 rounded-xl text-[11px]">
+                                <span class="text-purple-400 font-bold text-[10px]">Trục Y:</span>
+                                <select id="guessAxisYSelect" class="bg-transparent text-white text-[11px] outline-none cursor-pointer font-medium" onchange="handleGuessAxisChange()">
+                                    <option value="0" class="bg-[#101114]">Sepal Length (Đài - Dài)</option>
+                                    <option value="1" class="bg-[#101114]">Sepal Width (Đài - Rộng)</option>
+                                    <option value="2" class="bg-[#101114]">Petal Length (Cánh - Dài)</option>
+                                    <option value="3" selected class="bg-[#101114]">Petal Width (Cánh - Rộng)</option>
+                                </select>
+                            </div>
                         </div>
-                        <button type="button" class="px-5 py-2 rounded-full bg-[#e8702a] hover:bg-[#d2611f] border border-[#e8702a]/60 text-xs font-semibold text-white shadow-lg shadow-[#e8702a]/25 transition-all flex items-center gap-1.5 active:scale-95" onclick="generateRandomSample()">
-                            🎲 Tạo mẫu mới
+
+                        <button type="button" class="px-3 py-1 rounded-xl bg-gradient-to-r from-[#e8702a] to-[#f2c14e] hover:brightness-110 active:scale-95 text-[11px] font-bold text-black transition-all flex items-center gap-1.5 shadow-md shadow-[#e8702a]/20" onclick="generateRandomSample()">
+                            <span>🎲</span> Tạo mẫu ngẫu nhiên mới
                         </button>
                     </div>
 
-                    <!-- THANH CHỌN 2 TRỤC ĐẶC TRƯNG -->
-                    <div class="flex items-center gap-2.5 flex-wrap text-xs mb-4 p-3 rounded-2xl bg-white/[0.04] border border-white/10">
-                        <div class="flex items-center gap-1.5 bg-black/40 border border-[#e8702a]/50 px-3 py-1.5 rounded-xl">
-                            <span class="text-[#e8702a] font-bold text-[11px]">Trục X:</span>
-                            <select id="guessAxisXSelect" class="bg-transparent text-white text-xs outline-none cursor-pointer font-medium" onchange="handleGuessAxisChange()">
-                                <option value="0" class="bg-[#101114]">Sepal Length (Đài - Dài)</option>
-                                <option value="1" class="bg-[#101114]">Sepal Width (Đài - Rộng)</option>
-                                <option value="2" selected class="bg-[#101114]">Petal Length (Cánh - Dài)</option>
-                                <option value="3" class="bg-[#101114]">Petal Width (Cánh - Rộng)</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5 bg-black/40 border border-[#f2c14e]/50 px-3 py-1.5 rounded-xl">
-                            <span class="text-[#f2c14e] font-bold text-[11px]">Trục Y:</span>
-                            <select id="guessAxisYSelect" class="bg-transparent text-white text-xs outline-none cursor-pointer font-medium" onchange="handleGuessAxisChange()">
-                                <option value="0" class="bg-[#101114]">Sepal Length (Đài - Dài)</option>
-                                <option value="1" class="bg-[#101114]">Sepal Width (Đài - Rộng)</option>
-                                <option value="2" class="bg-[#101114]">Petal Length (Cánh - Dài)</option>
-                                <option value="3" selected class="bg-[#101114]">Petal Width (Cánh - Rộng)</option>
-                            </select>
-                        </div>
-                        <span class="text-[11px] text-white/60 ml-auto hidden sm:inline">✨ Nhấp thẻ bên dưới hoặc chọn 2 trục để biểu đồ vẽ theo đặc trưng đó</span>
-                    </div>
-
-                    <!-- 4 THẺ THÔNG SỐ TOÀN MÀN HÌNH (RỘNG RÃI, RÕ RÀNG) -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                        <!-- Sepal Length (0) -->
-                        <div id="guessCard_0" class="guess-feat-card p-4 rounded-2xl bg-white/[0.04] border border-white/10 cursor-pointer transition-all hover:border-white/30" onclick="selectGuessFeature(0)" title="Nhấp để chọn đặc trưng này">
-                            <div class="flex items-center justify-between text-[11px] mb-1.5">
-                                <span class="text-white/60">🌿 Sepal Length</span>
-                                <span id="guessBadge_0" class="text-[10px] px-1.5 py-0.5 rounded-md bg-white/10 text-white/50 font-medium">Nhấp chọn</span>
+                    <div class="grid lg:grid-cols-12 gap-3.5 items-stretch">
+                        <!-- CỘT TRÁI (5/12): 4 Ô THÔNG SỐ (NHẤP THẺ ĐỂ CHỌN TRỤC VẼ) -->
+                        <div class="lg:col-span-5 grid grid-cols-2 gap-2.5">
+                            <!-- Sepal Length (0) -->
+                            <div id="guessCard_0" class="p-2.5 sm:p-3 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col justify-between cursor-pointer transition-all hover:border-white/30" onclick="selectGuessFeature(0)" title="Nhấp để chọn đặc trưng này lên trục đồ thị">
+                                <div class="text-[10px] font-medium text-white/70 flex items-center justify-between gap-1">
+                                    <span class="flex items-center gap-1"><span>🌿</span> Sepal Length</span>
+                                    <span id="guessBadge_0" class="text-[9px] px-1.5 py-0.2 rounded-md bg-white/10 text-white/50 font-medium">Nhấp chọn</span>
+                                </div>
+                                <div id="guessSepalLength" class="text-xl sm:text-2xl font-bold font-mono text-white tabular-nums my-0.5">
+                                    6 cm
+                                </div>
+                                <div class="text-[9px] text-white/40">Chiều dài đài hoa</div>
                             </div>
-                            <div id="guessSepalLength" class="text-2xl font-mono font-bold text-white tabular-nums">5.1 cm</div>
-                            <div class="text-[10px] text-white/40 mt-1">Chiều dài đài hoa</div>
-                        </div>
 
-                        <!-- Sepal Width (1) -->
-                        <div id="guessCard_1" class="guess-feat-card p-4 rounded-2xl bg-white/[0.04] border border-white/10 cursor-pointer transition-all hover:border-white/30" onclick="selectGuessFeature(1)" title="Nhấp để chọn đặc trưng này">
-                            <div class="flex items-center justify-between text-[11px] mb-1.5">
-                                <span class="text-white/60">🌿 Sepal Width</span>
-                                <span id="guessBadge_1" class="text-[10px] px-1.5 py-0.5 rounded-md bg-white/10 text-white/50 font-medium">Nhấp chọn</span>
+                            <!-- Sepal Width (1) -->
+                            <div id="guessCard_1" class="p-2.5 sm:p-3 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col justify-between cursor-pointer transition-all hover:border-white/30" onclick="selectGuessFeature(1)" title="Nhấp để chọn đặc trưng này lên trục đồ thị">
+                                <div class="text-[10px] font-medium text-white/70 flex items-center justify-between gap-1">
+                                    <span class="flex items-center gap-1"><span>🌿</span> Sepal Width</span>
+                                    <span id="guessBadge_1" class="text-[9px] px-1.5 py-0.2 rounded-md bg-white/10 text-white/50 font-medium">Nhấp chọn</span>
+                                </div>
+                                <div id="guessSepalWidth" class="text-xl sm:text-2xl font-bold font-mono text-white tabular-nums my-0.5">
+                                    2.9 cm
+                                </div>
+                                <div class="text-[9px] text-white/40">Độ rộng đài hoa</div>
                             </div>
-                            <div id="guessSepalWidth" class="text-2xl font-mono font-bold text-white tabular-nums">3.5 cm</div>
-                            <div class="text-[10px] text-white/40 mt-1">Chiều rộng đài hoa</div>
-                        </div>
 
-                        <!-- Petal Length (2) - Default Trục X -->
-                        <div id="guessCard_2" class="guess-feat-card p-4 rounded-2xl bg-[#e8702a]/12 border-2 border-[#e8702a] shadow-lg shadow-[#e8702a]/20 cursor-pointer transition-all scale-[1.01]" onclick="selectGuessFeature(2)" title="Nhấp để chọn đặc trưng này">
-                            <div class="flex items-center justify-between text-[11px] mb-1.5">
-                                <span class="text-[#e8702a] font-semibold">✨ Petal Length</span>
-                                <span id="guessBadge_2" class="text-[10px] px-2 py-0.5 rounded-md bg-[#e8702a] text-white font-bold shadow-sm">Trục X (Chơi)</span>
+                            <!-- Petal Length (2) -->
+                            <div id="guessCard_2" class="p-2.5 sm:p-3 rounded-xl bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 flex flex-col justify-between cursor-pointer transition-all" onclick="selectGuessFeature(2)" title="Nhấp để chọn đặc trưng này lên trục đồ thị">
+                                <div class="text-[10px] font-semibold text-indigo-300 flex items-center justify-between gap-1">
+                                    <span class="flex items-center gap-1"><span>✨</span> Petal Length</span>
+                                    <span id="guessBadge_2" class="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-600 text-white font-bold shadow-sm">Trục X (Chơi)</span>
+                                </div>
+                                <div id="guessPetalLength" class="text-xl sm:text-2xl font-bold font-mono text-indigo-300 tabular-nums my-0.5">
+                                    4.5 cm
+                                </div>
+                                <div class="text-[9px] text-indigo-200/70 font-medium">Đặc trưng quyết định</div>
                             </div>
-                            <div id="guessPetalLength" class="text-2xl font-mono font-bold text-[#e8702a] tabular-nums">1.4 cm</div>
-                            <div class="text-[10px] text-white/60 mt-1">Chiều dài cánh hoa</div>
+
+                            <!-- Petal Width (3) -->
+                            <div id="guessCard_3" class="p-2.5 sm:p-3 rounded-xl bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 flex flex-col justify-between cursor-pointer transition-all" onclick="selectGuessFeature(3)" title="Nhấp để chọn đặc trưng này lên trục đồ thị">
+                                <div class="text-[10px] font-semibold text-purple-300 flex items-center justify-between gap-1">
+                                    <span class="flex items-center gap-1"><span>✨</span> Petal Width</span>
+                                    <span id="guessBadge_3" class="text-[9px] px-1.5 py-0.2 rounded-md bg-purple-600 text-white font-bold shadow-sm">Trục Y (Chơi)</span>
+                                </div>
+                                <div id="guessPetalWidth" class="text-xl sm:text-2xl font-bold font-mono text-purple-300 tabular-nums my-0.5">
+                                    1.5 cm
+                                </div>
+                                <div class="text-[9px] text-purple-200/70 font-medium">Đặc trưng quyết định</div>
+                            </div>
                         </div>
 
-                        <!-- Petal Width (3) - Default Trục Y -->
-                        <div id="guessCard_3" class="guess-feat-card p-4 rounded-2xl bg-[#f2c14e]/12 border-2 border-[#f2c14e] shadow-lg shadow-[#f2c14e]/20 cursor-pointer transition-all scale-[1.01]" onclick="selectGuessFeature(3)" title="Nhấp để chọn đặc trưng này">
-                            <div class="flex items-center justify-between text-[11px] mb-1.5">
-                                <span class="text-[#f2c14e] font-semibold">✨ Petal Width</span>
-                                <span id="guessBadge_3" class="text-[10px] px-2 py-0.5 rounded-md bg-[#f2c14e] text-black font-bold shadow-sm">Trục Y (Chơi)</span>
+                        <!-- CỘT PHẢI (7/12): BIỂU ĐỒ VỊ TRÍ 2D -->
+                        <div class="lg:col-span-7 flex flex-col p-3 rounded-xl bg-[#0e0f13] border border-white/15 shadow-md relative">
+                            <div class="flex items-center justify-between flex-wrap gap-2 mb-1.5 pb-1.5 border-b border-white/10">
+                                <div id="guessChartTitle" class="text-[11px] font-semibold text-white/90 flex items-center gap-1">
+                                    <span>📍</span> Vị trí Mẫu ngẫu nhiên (Petal Length vs Petal Width)
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px]">
+                                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#4ade80]"></span> Setosa</span>
+                                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span> Versicolor</span>
+                                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#c084fc]"></span> Virginica</span>
+                                    <span class="flex items-center gap-1 font-bold text-white"><span class="w-2.5 h-2.5 rounded-full bg-red-500 border border-white"></span> 🔴 Mẫu cần đoán</span>
+                                </div>
                             </div>
-                            <div id="guessPetalWidth" class="text-2xl font-mono font-bold text-[#f2c14e] tabular-nums">0.2 cm</div>
-                            <div class="text-[10px] text-white/60 mt-1">Chiều rộng cánh hoa</div>
+                            <div class="relative w-full h-[165px] sm:h-[185px]">
+                                <canvas id="guessChart" class="w-full h-full"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- BẢNG VẼ NẰM Ở TRÊN BƯỚC 1 (ĐỂ NGƯỜI DÙNG QUAN SÁT RÕ TRƯỚC KHI ĐOÁN) -->
-                <div class="mb-8 p-5 rounded-2xl bg-[#0e0f13] border border-white/15 flex flex-col h-[340px] shadow-xl">
-                    <div class="flex items-center justify-between flex-wrap gap-2 mb-3 pb-2 border-b border-white/10">
-                        <div id="guessChartTitle" class="text-xs font-semibold text-white/90 flex items-center gap-2">
-                            <span>📍</span> Vị trí Mẫu ngẫu nhiên (Petal Length vs Petal Width)
+                <!-- KHỐI 2: BƯỚC 1 (3 THẺ LOÀI HOA NẰM NGANG GỌN GÀNG) -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center shadow-md">1</span>
+                            <h4 class="text-xs sm:text-sm font-bold text-white">
+                                Bước 1: Quan sát và chọn dự đoán loài hoa của bạn:
+                            </h4>
                         </div>
-                        <div class="flex items-center gap-3 text-[11px]">
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#4ade80]"></span> Setosa</span>
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span> Versicolor</span>
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#c084fc]"></span> Virginica</span>
-                            <span class="flex items-center gap-1.5 text-white font-bold"><span class="w-3 h-3 rounded-full bg-red-500 border border-white"></span> 🔴 Mẫu cần đoán</span>
-                        </div>
+                        <span id="guessSelectedFlowerName" class="text-xs font-bold text-[#f2c14e] hidden">Iris Versicolor</span>
                     </div>
-                    <div class="flex-1 relative w-full h-full min-h-[240px]">
-                        <canvas id="guessChart" class="w-full h-full"></canvas>
-                    </div>
-                </div>
 
-                <!-- BƯỚC 1: LỰA CHỌN CỦA BẠN (LÀM NỔI BẬT RÕ RÀNG KHI CHỌN) -->
-                <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
-                    <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full bg-[#e8702a] text-black text-xs font-bold flex items-center justify-center shadow-md">1</span>
-                        <h4 class="text-sm font-semibold text-white">Bước 1: Chọn dự đoán loài hoa của bạn:</h4>
-                    </div>
-                    <span class="text-xs text-white/60 italic">Nhấp vào thẻ loài hoa để chọn</span>
-                </div>
-
-                <div class="grid sm:grid-cols-3 gap-4 mb-4">
-                    <!-- SETOSA -->
-                    <button id="guessOpt_setosa" type="button" class="guess-opt-btn relative p-4 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-left transition-all flex items-center justify-between gap-3 group" onclick="selectGuess('setosa', this)">
-                        <div class="flex items-center gap-3">
-                            <img src="/images/setosa.jpg" alt="Setosa" class="w-14 h-14 rounded-xl object-cover border border-white/15" onerror="this.src='/images/setosa.svg'" />
-                            <div>
-                                <div class="text-sm font-bold text-white font-playfair flex items-center gap-1.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <!-- SETOSA -->
+                        <button id="guessOpt_setosa" type="button" class="guess-opt-btn text-left p-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 transition-all flex items-center gap-3 group relative cursor-pointer" onclick="selectGuess('setosa', this)">
+                            <img src="/images/setosa.jpg" alt="Setosa" class="w-11 h-11 rounded-xl object-cover border border-white/20 shrink-0 shadow-sm" onerror="this.src='/images/setosa.svg'" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-white flex items-center gap-1.5">
                                     Iris Setosa
-                                    <span class="guess-active-tag hidden text-[9px] px-1.5 py-0.2 rounded-full bg-[#4ade80] text-black font-sans font-bold">ĐÃ CHỌN</span>
+                                    <span class="guess-active-tag hidden text-[8px] px-1 py-0.2 rounded-full bg-[#4ade80] text-black font-bold">ĐÃ CHỌN</span>
                                 </div>
-                                <div class="text-[11px] text-white/60">Cánh siêu ngắn (&lt; 2.5cm)</div>
-                                <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30 font-medium">Tách biệt</span>
+                                <div class="text-[10px] text-white/60 truncate">Cánh ngắn (&lt; 2.5cm)</div>
+                                <span class="inline-block mt-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded-md bg-[#4ade80]/15 text-[#4ade80] border border-[#4ade80]/30">
+                                    Tách biệt hoàn toàn
+                                </span>
                             </div>
-                        </div>
-                        <div class="guess-check-indicator w-7 h-7 rounded-full border border-white/30 flex items-center justify-center text-xs shrink-0 transition-all opacity-40">
-                            ✓
-                        </div>
-                    </button>
+                            <div class="guess-check-indicator w-5 h-5 rounded-full border border-white/30 flex items-center justify-center text-[10px] shrink-0 opacity-40">
+                                ✓
+                            </div>
+                        </button>
 
-                    <!-- VERSICOLOR (VÀNG HỔ PHÁCH) -->
-                    <button id="guessOpt_versicolor" type="button" class="guess-opt-btn relative p-4 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-left transition-all flex items-center justify-between gap-3 group" onclick="selectGuess('versicolor', this)">
-                        <div class="flex items-center gap-3">
-                            <img src="/images/versicolor.jpg" alt="Versicolor" class="w-14 h-14 rounded-xl object-cover border border-white/15" onerror="this.src='/images/versicolor.svg'" />
-                            <div>
-                                <div class="text-sm font-bold text-white font-playfair flex items-center gap-1.5">
+                        <!-- VERSICOLOR -->
+                        <button id="guessOpt_versicolor" type="button" class="guess-opt-btn text-left p-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 transition-all flex items-center gap-3 group relative cursor-pointer" onclick="selectGuess('versicolor', this)">
+                            <img src="/images/versicolor.jpg" alt="Versicolor" class="w-11 h-11 rounded-xl object-cover border border-white/20 shrink-0 shadow-sm" onerror="this.src='/images/versicolor.svg'" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-white flex items-center gap-1.5">
                                     Iris Versicolor
-                                    <span class="guess-active-tag hidden text-[9px] px-1.5 py-0.2 rounded-full bg-[#f59e0b] text-black font-sans font-bold">ĐÃ CHỌN</span>
+                                    <span class="guess-active-tag hidden text-[8px] px-1 py-0.2 rounded-full bg-[#f59e0b] text-black font-bold">ĐÃ CHỌN</span>
                                 </div>
-                                <div class="text-[11px] text-white/60">Trung bình (3.0 – 5.0cm)</div>
-                                <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30 font-medium">Vùng trung gian (Vàng hổ phách)</span>
+                                <div class="text-[10px] text-white/60 truncate">Trung bình (3.0 - 5.0cm)</div>
+                                <span class="inline-block mt-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded-md bg-[#f59e0b]/15 text-[#f59e0b] border border-[#f59e0b]/30">
+                                    Vùng trung gian
+                                </span>
                             </div>
-                        </div>
-                        <div class="guess-check-indicator w-7 h-7 rounded-full border border-white/30 flex items-center justify-center text-xs shrink-0 transition-all opacity-40">
-                            ✓
-                        </div>
-                    </button>
+                            <div class="guess-check-indicator w-5 h-5 rounded-full border border-white/30 flex items-center justify-center text-[10px] shrink-0 opacity-40">
+                                ✓
+                            </div>
+                        </button>
 
-                    <!-- VIRGINICA -->
-                    <button id="guessOpt_virginica" type="button" class="guess-opt-btn relative p-4 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-left transition-all flex items-center justify-between gap-3 group" onclick="selectGuess('virginica', this)">
-                        <div class="flex items-center gap-3">
-                            <img src="/images/virginica.jpg" alt="Virginica" class="w-14 h-14 rounded-xl object-cover border border-white/15" onerror="this.src='/images/virginica.svg'" />
-                            <div>
-                                <div class="text-sm font-bold text-white font-playfair flex items-center gap-1.5">
+                        <!-- VIRGINICA -->
+                        <button id="guessOpt_virginica" type="button" class="guess-opt-btn text-left p-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 transition-all flex items-center gap-3 group relative cursor-pointer" onclick="selectGuess('virginica', this)">
+                            <img src="/images/virginica.jpg" alt="Virginica" class="w-11 h-11 rounded-xl object-cover border border-white/20 shrink-0 shadow-sm" onerror="this.src='/images/virginica.svg'" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-white flex items-center gap-1.5">
                                     Iris Virginica
-                                    <span class="guess-active-tag hidden text-[9px] px-1.5 py-0.2 rounded-full bg-[#c084fc] text-black font-sans font-bold">ĐÃ CHỌN</span>
+                                    <span class="guess-active-tag hidden text-[8px] px-1 py-0.2 rounded-full bg-[#c084fc] text-black font-bold">ĐÃ CHỌN</span>
                                 </div>
-                                <div class="text-[11px] text-white/60">Cánh hoa to (&gt; 4.8cm)</div>
-                                <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-[#c084fc]/20 text-[#c084fc] border border-[#c084fc]/30 font-medium">Cỡ lớn nhất</span>
+                                <div class="text-[10px] text-white/60 truncate">Cánh to dài (&gt; 4.8cm)</div>
+                                <span class="inline-block mt-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded-md bg-[#c084fc]/15 text-[#c084fc] border border-[#c084fc]/30">
+                                    Kích thước lớn nhất
+                                </span>
                             </div>
-                        </div>
-                        <div class="guess-check-indicator w-7 h-7 rounded-full border border-white/30 flex items-center justify-center text-xs shrink-0 transition-all opacity-40">
-                            ✓
-                        </div>
-                    </button>
-                </div>
-
-                <!-- BĂNG THÔNG BÁO HIỆN RÕ LỰA CHỌN CỦA NGƯỜI DÙNG -->
-                <div id="guessSelectionBanner" class="hidden mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#e8702a]/20 via-[#f2c14e]/15 to-transparent border-2 border-[#e8702a] flex items-center justify-between gap-4 shadow-xl shadow-[#e8702a]/20">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-[#e8702a] flex items-center justify-center text-xl text-white shadow-md font-bold">🎯</div>
-                        <div>
-                            <div class="text-[11px] text-white/70 font-semibold uppercase tracking-wider">LỰA CHỌN DỰ ĐOÁN CỦA BẠN:</div>
-                            <div id="guessSelectedFlowerName" class="text-lg font-playfair font-bold text-white">Iris Versicolor</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="guessSelectedFlowerTag" class="text-xs px-3 py-1 rounded-full bg-[#e8702a] text-white font-bold shadow-md">ĐÃ CHỌN</span>
-                        <span class="text-xs text-[#f2c14e] font-medium hidden sm:inline">👉 Nhấn Bước 2 bên dưới để AI kiểm tra!</span>
+                            <div class="guess-check-indicator w-5 h-5 rounded-full border border-white/30 flex items-center justify-center text-[10px] shrink-0 opacity-40">
+                                ✓
+                            </div>
+                        </button>
                     </div>
                 </div>
 
-                <!-- BƯỚC 2: KIỂM TRA VỚI SVM -->
-                <div class="mb-4">
-                    <button id="guessBtn" type="button" class="py-3 px-8 rounded-full bg-[#e8702a] hover:bg-[#d2611f] active:scale-95 text-white font-medium text-sm transition-all shadow-lg shadow-[#e8702a]/25 flex items-center gap-2" onclick="checkGuess()">
+                <!-- KHỐI 3: BƯỚC 2 & KHUNG KẾT QUẢ NẰM CÙNG HÀNG NGANG (TIẾT KIỆM KHÔNG GIAN TỐI ĐA) -->
+                <div class="flex flex-col sm:flex-row items-stretch gap-2.5 pt-1">
+                    <button id="guessBtn" type="button" class="sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:brightness-110 active:scale-95 text-white font-semibold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 shrink-0" onclick="checkGuess()">
                         <span>🔍</span>
                         <span id="guessBtnText">Bước 2: Kiểm tra kết quả với AI (SVM)</span>
                     </button>
-                </div>
 
-                <!-- KẾT QUẢ ĐOÁN (YÊU CẦU II.2: BỎ ĐI CÁC DÒNG GIẢI THÍCH KHI ĐÃ ĐOÁN XONG) -->
-                <div id="guessResult" class="p-5 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white/70">
-                    💡 Hãy chọn 1 trong 3 loài hoa ở Bước 1 và nhấn nút kiểm tra để xem kết quả đối chiếu với mô hình SVM!
+                    <!-- KẾT QUẢ / GỢI Ý MẪU MỚI -->
+                    <div id="guessResult" class="flex-1 p-2.5 px-3.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white/80 flex items-center gap-2">
+                        <span>🎲</span>
+                        <span>Đã tạo mẫu hoa mới! Hãy chọn dự đoán ở Bước 1 và nhấn kiểm tra.</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1299,64 +1339,69 @@
                 <button type="button" onclick="closeGuideModal()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white">✕</button>
             </div>
 
-            <!-- NỘI DUNG 3 PHẦN NGUYÊN BẢN -->
+            <!-- NỘI DUNG 3 PHẦN CHI TIẾT & CHUẨN XÁC VỚI HỆ THỐNG HIỆN TẠI -->
             <div class="space-y-6 text-xs text-white/80 leading-relaxed">
                 <!-- 1. QUẢN TRỊ VIÊN -->
                 <div class="p-5 rounded-2xl bg-white/[0.04] border border-purple-500/30">
-                    <div class="text-[11px] font-bold text-purple-300 uppercase tracking-wider mb-3">👑 1. Thông tin Quản trị viên (Admin)</div>
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-2xl text-white shadow-lg">
-                            👩‍💼
-                        </div>
+                    <div class="text-[11px] font-bold text-purple-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <span>👑</span> 1. Thông tin Quản trị viên & Tác giả (Admin)
+                    </div>
+                    <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                        <img id="adminAvatarImg" src="/src/assets/images/admin_avatar.jpg" alt="Lê Thanh Thảo" class="w-24 h-32 sm:w-28 sm:h-36 rounded-2xl object-cover border-2 border-[#f2c14e]/60 shadow-xl shadow-purple-500/20 shrink-0" onerror="if (this.src.indexOf('/images/admin_avatar.jpg') === -1) { this.src='/images/admin_avatar.jpg'; } else if (this.src.indexOf('/src/asscts/images/admin_avatar.jpg') === -1) { this.src='/src/asscts/images/admin_avatar.jpg'; } else { this.src='/images/setosa.jpg'; }" />
                         <div class="space-y-1">
-                            <div class="text-sm font-bold text-white">Họ và tên: <span class="text-[#f2c14e]">Lê Thanh Thảo</span></div>
-                            <div class="text-white/70">Ngày Sinh: <span class="text-white font-medium">21/06/2026</span></div>
-                            <div class="text-white/70">Email: <a href="mailto:lethanhthao8130@gmail.com" class="text-[#e8702a] font-medium hover:underline">lethanhthao8130@gmail.com</a></div>
+                            <div class="text-sm sm:text-base font-bold text-white">Họ và tên: <span class="text-[#f2c14e]">Lê Thanh Thảo</span></div>
+                            <div class="text-white/70">Vai trò: <span class="text-[#4ade80] font-semibold">Quản trị viên & Tác giả Hệ thống</span></div>
+                            <div class="text-white/70">Email liên hệ: <a href="mailto:lethao8130@gmail.com" class="text-[#e8702a] font-bold hover:underline">lethao8130@gmail.com</a></div>
+                            <div class="text-white/50 text-[11px] leading-relaxed">Dự án: Nền tảng Nhận diện & Trực quan hóa Học máy Support Vector Machine (SVM)</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. GIỚI THIỆU TRANG WEB & MÔ HÌNH SVM -->
                 <div class="p-5 rounded-2xl bg-white/[0.04] border border-blue-500/30 space-y-3">
-                    <div class="text-[11px] font-bold text-blue-300 uppercase tracking-wider">🌺 2. Giới thiệu về Trang Web & Mô hình SVM</div>
+                    <div class="text-[11px] font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🌺</span> 2. Giới thiệu về Nền tảng Iris SVM
+                    </div>
                     <p>
-                        <b>Iris SVM Platform</b> là nền tảng trực quan hóa và phân loại học máy chuyên sâu giải quyết bài toán phân loại 3 loài hoa Diên Vĩ kinh điển: <i>Iris Setosa</i>, <i>Iris Versicolor</i>, và <i>Iris Virginica</i> dựa trên đầy đủ 4 đặc trưng hình thái (Chiều dài & Chiều rộng Đài hoa, Chiều dài & Chiều rộng Cánh hoa).
+                        <b>Iris SVM Platform</b> là ứng dụng học máy trực quan hóa chuyên sâu, giải quyết bài toán phân loại đa lớp cho 3 loài hoa Diên Vĩ kinh điển: <i>Iris Setosa</i>, <i>Iris Versicolor</i>, và <i>Iris Virginica</i> dựa trên tập dữ liệu đo đạc 4 chiều của nhà thống kê học <b>R.A. Fisher (1936)</b> bao gồm: Chiều dài & Chiều rộng Đài hoa (Sepal), Chiều dài & Chiều rộng Cánh hoa (Petal).
                     </p>
                     <div class="grid sm:grid-cols-3 gap-3 pt-2">
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">🎯 Siêu phẳng tối ưu</div>
-                            <div class="text-white/60">Tìm kiếm siêu phẳng phân tách có lề (Margin) cực đại giữa các lớp, tối thiểu hóa sai số.</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 flex items-center gap-1.5"><span>🎯</span> Siêu phẳng tối ưu</div>
+                            <div class="text-white/60">Tìm kiếm siêu phẳng phân tách có lề (Margin) cực đại giữa các lớp, tối ưu hóa các Support Vectors và triệt tiêu sai số.</div>
                         </div>
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">⚡ 5 Kernel SVM Thật sự</div>
-                            <div class="text-white/60">Huấn luyện và đánh giá riêng biệt cả 5 kernel: RBF, Linear, Polynomial, Sigmoid và Precomputed.</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 flex items-center gap-1.5"><span>⚡</span> 5 Kernel Đa dạng</div>
+                            <div class="text-white/60">Hỗ trợ đầy đủ cả 5 Kernel: RBF (Gaussian phi tuyến), Linear (Tuyến tính), Polynomial (Đa thức), Sigmoid và Precomputed.</div>
                         </div>
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">📈 Trực quan hóa 2D</div>
-                            <div class="text-white/60">Vẽ Decision Boundary thời gian thực, trò chơi đoán hoa và đồng bộ cơ sở dữ liệu Supabase.</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 flex items-center gap-1.5"><span>📈</span> Trực quan & Realtime</div>
+                            <div class="text-white/60">Vẽ Decision Boundary 2D mượt mà, phân tích tệp dữ liệu lớn, benchmark đa mô hình và đồng bộ Supabase Realtime.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. HƯỚNG DẪN SỬ DỤNG 5 BƯỚC -->
+                <!-- 3. HƯỚNG DẪN SỬ DỤNG CHI TIẾT TỪNG PHÂN HỆ -->
                 <div class="p-5 rounded-2xl bg-white/[0.04] border border-emerald-500/30 space-y-3">
-                    <div class="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">🚀 3. Hướng dẫn Sử dụng Trang Web (5 Bước Trực Quan)</div>
+                    <div class="text-[11px] font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🚀</span> 3. Hướng dẫn Sử dụng Chi tiết Các Chức năng
+                    </div>
                     <div class="grid sm:grid-cols-2 gap-3 pt-1">
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">1. Nhận diện & Huấn luyện</div>
-                            <div class="text-white/60">Kéo thanh trượt hoặc nhấp vào đồ thị 2D để xem SVM phân loại. Bấm "Huấn luyện & Vẽ Decision Boundary" để cập nhật ranh giới.</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 text-xs text-[#f2c14e]">1. Nhận diện & Huấn luyện (Mục I)</div>
+                            <div class="text-white/60">Nhập 4 thông số hoặc chọn mẫu sẵn để phân loại tức thì. Bên dưới cho phép chỉnh Kernel, siêu tham số $C, \gamma, d$, chọn 2 trục vẽ và xem ranh giới Decision Boundary thay đổi.</div>
                         </div>
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">2. Thử thách Đoán hoa</div>
-                            <div class="text-white/60">Quan sát 4 thông số ngẫu nhiên do API tính toán và đoán xem hoa thuộc loài nào trước khi kiểm tra với AI.</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 text-xs text-[#f2c14e]">2. Thử thách Đoán hoa (Mục II)</div>
+                            <div class="text-white/60">Hệ thống sinh mẫu ngẫu nhiên liên tục trên toàn không gian; bạn có thể nhấp/kéo chuột trên biểu đồ 2D hoặc đổi trục quan sát, chọn 1 trong 3 loài và kiểm tra phán đoán với AI.</div>
                         </div>
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">3. Phân tích Dữ liệu & File</div>
-                            <div class="text-white/60">Tải tệp CSV/Excel để phân loại hàng loạt ở chế độ "Chưa có nhãn" hoặc đối chiếu ở chế độ "Đã có nhãn".</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 text-xs text-[#f2c14e]">3. Phân tích Dữ liệu Tập tin (Mục III)</div>
+                            <div class="text-white/60">Tải tệp CSV/Excel với 2 chế độ: <i>"Chưa có nhãn"</i> để AI tự động dự đoán hàng loạt, hoặc <i>"Đã có nhãn"</i> để tính toán ma trận nhầm lẫn và độ khớp thực tế.</div>
                         </div>
-                        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                            <div class="font-bold text-white mb-1">4. Model Benchmark</div>
-                            <div class="text-white/60">Đối chiếu bảng số liệu thực tế qua Accuracy, Precision, Recall, F1-score và biểu đồ so sánh độ chính xác.</div>
+                        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div class="font-bold text-white mb-1 text-xs text-[#f2c14e]">4. Model Benchmark & Lịch sử (Mục IV & V)</div>
+                            <div class="text-white/60">So sánh bảng số liệu định lượng giữa các lần huấn luyện qua Accuracy, Precision, Recall, F1-Score và xem lại nhật ký dự đoán cá nhân được lưu trữ an toàn.</div>
                         </div>
                     </div>
                 </div>

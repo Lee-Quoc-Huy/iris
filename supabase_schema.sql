@@ -183,24 +183,24 @@ EXCEPTION WHEN others THEN null;
 END $$;
 
 -- =====================================================================
--- 12. TẠO SẴN TÀI KHOẢN ADMIN MẪU
--- Email: admin@gmail.com | Mật khẩu: admin
+-- 12. TẠO SẴN TÀI KHOẢN ADMIN MẪU (AN TOÀN TUYỆT ĐỐI KHÔNG BỊ TRÙNG ID/EMAIL)
+-- Email: lethao8130@gmail.com (hoặc admin@gmail.com) | Mật khẩu: admin
 -- =====================================================================
-INSERT INTO public.app_users (id, name, email, password, role)
-VALUES ('00000000-0000-0000-0000-000000000001', 'Lê Thanh Thảo', 'admin@gmail.com', 'admin', 'ADMIN')
-ON CONFLICT (email) DO UPDATE SET 
-    name = EXCLUDED.name,
-    password = EXCLUDED.password,
-    role = EXCLUDED.role;
-
--- Thử thêm vào profiles (bọc an toàn trong DO block để không bao giờ báo lỗi)
 DO $$ BEGIN
+    -- Xóa bản ghi cũ nếu trùng email hoặc trùng id để tránh lỗi duplicate key
+    DELETE FROM public.app_users WHERE id = '00000000-0000-0000-0000-000000000001' OR email IN ('lethao8130@gmail.com', 'admin@gmail.com');
+    
+    INSERT INTO public.app_users (id, name, email, password, role)
+    VALUES ('00000000-0000-0000-0000-000000000001', 'Lê Thanh Thảo', 'lethao8130@gmail.com', 'admin', 'ADMIN');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- Thêm vào profiles (bọc an toàn trong DO block để không bao giờ báo lỗi)
+DO $$ BEGIN
+    DELETE FROM public.profiles WHERE id = '00000000-0000-0000-0000-000000000001' OR email IN ('lethao8130@gmail.com', 'admin@gmail.com');
+
     INSERT INTO public.profiles (id, email, full_name, password, role)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'admin@gmail.com', 'Lê Thanh Thảo', 'admin', 'ADMIN')
-    ON CONFLICT (id) DO UPDATE SET 
-        full_name = EXCLUDED.full_name,
-        password = EXCLUDED.password,
-        role = EXCLUDED.role;
+    VALUES ('00000000-0000-0000-0000-000000000001', 'lethao8130@gmail.com', 'Lê Thanh Thảo', 'admin', 'ADMIN');
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
