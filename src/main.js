@@ -69,7 +69,7 @@ function computeKernel(x1, x2, kernel, gamma, degree = 3, coef0 = 1.0) {
     dot += x1[i] * x2[i];
     dsq += diff * diff;
   }
-  if (kernel === 'linear' || kernel === 'precomputed') return dot;
+  if (kernel === 'linear') return dot;
   if (kernel === 'rbf') return Math.exp(-gamma * dsq);
   if (kernel === 'poly') return Math.pow(Math.max(0, gamma * dot + coef0), degree);
   if (kernel === 'sigmoid') return Math.tanh(gamma * dot + coef0);
@@ -713,7 +713,7 @@ window.handleKernelChange = function() {
   const degreeGroup = document.getElementById('degreeGroup');
   const modelInfo = document.getElementById('currentModelInfo');
 
-  if (gammaGroup) gammaGroup.style.display = (k === 'linear' || k === 'precomputed') ? 'none' : 'block';
+  if (gammaGroup) gammaGroup.style.display = (k === 'linear') ? 'none' : 'block';
   if (degreeGroup) degreeGroup.style.display = (k === 'poly') ? 'block' : 'none';
 
   const C = document.getElementById('cInput')?.value || '1.0';
@@ -2671,7 +2671,7 @@ async function renderAdminStats() {
   const expCountEl = document.getElementById('statTotalExperiments');
   if (expCountEl) expCountEl.innerText = allSystemExperiments.length;
 
-  const kernelCounts = { linear: 0, rbf: 0, poly: 0, sigmoid: 0, precomputed: 0 };
+  const kernelCounts = { linear: 0, rbf: 0, poly: 0, sigmoid: 0 };
   allSystemExperiments.forEach(e => {
     if (kernelCounts[e.kernel] !== undefined) kernelCounts[e.kernel]++;
   });

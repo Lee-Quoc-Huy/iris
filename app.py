@@ -22,15 +22,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load trước 5 models vào RAM để phản hồi cực nhanh
+# Load trước 4 models vào RAM để phản hồi cực nhanh
 models = {}
-for k in ["linear", "rbf", "poly", "sigmoid", "precomputed"]:
+for k in ["linear", "rbf", "poly", "sigmoid"]:
     pkl_file = f"svm_{k}.pkl"
     if os.path.exists(pkl_file):
         models[k] = joblib.load(pkl_file)
-
-# Load X_train cho precomputed kernel
-X_train_ref = np.load("X_train.npy") if os.path.exists("X_train.npy") else None
 
 # Load thông số metrics đã tính toán sẵn từ train.py
 metrics_data = {}
@@ -43,7 +40,7 @@ class IrisInput(BaseModel):
     sepal_width: float = Field(..., description="Chiều rộng đài hoa (cm)", example=3.5)
     petal_length: float = Field(..., description="Chiều dài cánh hoa (cm)", example=1.4)
     petal_width: float = Field(..., description="Chiều rộng cánh hoa (cm)", example=0.2)
-    kernel: Literal["linear", "rbf", "poly", "sigmoid", "precomputed"] = "linear"
+    kernel: Literal["linear", "rbf", "poly", "sigmoid"] = "linear"
 
 SPECIES_MAP = {0: "setosa", 1: "versicolor", 2: "virginica"}
 
@@ -51,7 +48,7 @@ SPECIES_MAP = {0: "setosa", 1: "versicolor", 2: "virginica"}
 def home():
     return {
         "message": "Iris Multi-Kernel SVM API is running",
-        "supported_kernels": ["linear", "rbf", "poly", "sigmoid", "precomputed"],
+        "supported_kernels": ["linear", "rbf", "poly", "sigmoid"],
         "version": "2.0.0"
     }
 
@@ -86,15 +83,7 @@ def predict(data: IrisInput):
     features = np.array([[data.sepal_length, data.sepal_width, data.petal_length, data.petal_width]])
 
     start_time = time.time()
-    
-    if k == "precomputed":
-        if X_train_ref is None:
-            raise HTTPException(status_code=500, detail="X_train.npy không tồn tại để tính toán Gram matrix")
-        gram_sample = np.dot(features, X_train_ref.T)
-        prediction = int(selected_model.predict(gram_sample)[0])
-    else:
-        prediction = int(selected_model.predict(features)[0])
-
+    prediction = int(selected_model.predict(features)[0])
     exec_time_ms = round((time.time() - start_time) * 1000, 3)
 
     return {

@@ -48,7 +48,7 @@ const SPECIES: Record<number, string> = {
   2: 'virginica',
 };
 
-const AVAILABLE_KERNELS = ['rbf', 'linear', 'poly', 'sigmoid', 'precomputed'];
+const AVAILABLE_KERNELS = ['rbf', 'linear', 'poly', 'sigmoid'];
 
 function predictSVM(
   sl: number,

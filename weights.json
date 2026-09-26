@@ -33,7 +33,7 @@
         ]
       ],
       "train_time_ms": 1.43,
-      "pred_time_ms": 0.23
+      "pred_time_ms": 0.22
     },
     "rbf": {
       "name": "SVM (RBF - Phi tuyến Gaussian)",
@@ -67,8 +67,8 @@
           10
         ]
       ],
-      "train_time_ms": 1.19,
-      "pred_time_ms": 0.23
+      "train_time_ms": 1.33,
+      "pred_time_ms": 0.24
     },
     "poly": {
       "name": "SVM (Polynomial - Đa thức bậc 3)",
@@ -102,7 +102,7 @@
           10
         ]
       ],
-      "train_time_ms": 1.17,
+      "train_time_ms": 1.19,
       "pred_time_ms": 0.17
     },
     "sigmoid": {
@@ -138,42 +138,7 @@
         ]
       ],
       "train_time_ms": 1.96,
-      "pred_time_ms": 0.32
-    },
-    "precomputed": {
-      "name": "SVM (Precomputed - Ma trận Gram)",
-      "kernel": "precomputed",
-      "params": {
-        "kernel": "precomputed",
-        "C": 1.0,
-        "gamma": null,
-        "degree": null,
-        "coef0": 0.0
-      },
-      "accuracy": 1.0,
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1_score": 1.0,
-      "support_vectors_count": 23,
-      "confusion_matrix": [
-        [
-          10,
-          0,
-          0
-        ],
-        [
-          0,
-          10,
-          0
-        ],
-        [
-          0,
-          0,
-          10
-        ]
-      ],
-      "train_time_ms": 1.17,
-      "pred_time_ms": 0.18
+      "pred_time_ms": 0.33
     }
   },
   "classes": [
@@ -190,7 +155,7 @@
   "test_size": 0.2,
   "random_state": 42,
   "stratify": true,
-  "trained_at": "2026-09-26 12:38:44",
+  "trained_at": "2026-09-26 13:51:48",
   "dataset_info": {
     "total_samples": 150,
     "train_samples": 120,

@@ -13,7 +13,7 @@
             9
         ],
         "train_time_ms": 1.43,
-        "pred_time_ms": 0.23,
+        "pred_time_ms": 0.22,
         "confusion_matrix": [
             [
                 10,
@@ -45,8 +45,8 @@
             23,
             21
         ],
-        "train_time_ms": 1.19,
-        "pred_time_ms": 0.23,
+        "train_time_ms": 1.33,
+        "pred_time_ms": 0.24,
         "confusion_matrix": [
             [
                 10,
@@ -78,7 +78,7 @@
             6,
             6
         ],
-        "train_time_ms": 1.17,
+        "train_time_ms": 1.19,
         "pred_time_ms": 0.17,
         "confusion_matrix": [
             [
@@ -112,7 +112,7 @@
             40
         ],
         "train_time_ms": 1.96,
-        "pred_time_ms": 0.32,
+        "pred_time_ms": 0.33,
         "confusion_matrix": [
             [
                 3,
@@ -128,39 +128,6 @@
                 10,
                 0,
                 0
-            ]
-        ]
-    },
-    "precomputed": {
-        "name": "SVM (Precomputed - Ma trận Gram)",
-        "kernel": "precomputed",
-        "accuracy": 1.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1_score": 1.0,
-        "support_vectors_count": 23,
-        "support_vectors_per_class": [
-            3,
-            11,
-            9
-        ],
-        "train_time_ms": 1.17,
-        "pred_time_ms": 0.18,
-        "confusion_matrix": [
-            [
-                10,
-                0,
-                0
-            ],
-            [
-                0,
-                10,
-                0
-            ],
-            [
-                0,
-                0,
-                10
             ]
         ]
     }

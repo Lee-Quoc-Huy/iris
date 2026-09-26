@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 print("================================================================")
-print("=== BẮT ĐẦU HUẤN LUYỆN DỰ ÁN 5-KERNEL SVM CHO BỘ HOA IRIS ===")
+print("=== BẮT ĐẦU HUẤN LUYỆN DỰ ÁN 4-KERNEL SVM CHO BỘ HOA IRIS ===")
 print("================================================================")
 
 # 1. Tải và chuẩn bị dữ liệu chuẩn R.A. Fisher Iris (150 mẫu, 4 đặc trưng)
@@ -26,8 +26,8 @@ print(f"Tổng số mẫu: {len(X)} | Tập Train: {len(X_train)} | Tập Test: 
 print(f"Các loài hoa: {target_names}")
 print(f"Các đặc trưng: {feature_names}\n")
 
-# 5 Kernel chuẩn học máy SVM
-kernels = ["linear", "rbf", "poly", "sigmoid", "precomputed"]
+# 4 Kernel chuẩn học máy SVM
+kernels = ["linear", "rbf", "poly", "sigmoid"]
 metrics_results = {}
 full_weights_data = {
     "models_metrics": {},
@@ -46,44 +46,26 @@ full_weights_data = {
     }
 }
 
-# Lưu lại X_train để dùng cho precomputed kernel inference
-np.save("X_train.npy", X_train)
-np.save("y_train.npy", y_train)
-
 for kernel in kernels:
     print(f"[*] Đang huấn luyện Kernel: {kernel.upper()}...")
     
-    if kernel == "precomputed":
-        # Precomputed Kernel: Ma trận Gram tích vô hướng tuyến tính (Gram matrix = X . X_train^T)
-        Gram_train = np.dot(X_train, X_train.T)
-        Gram_test = np.dot(X_test, X_train.T)
-        
-        start_train = time.time()
-        model = SVC(kernel="precomputed", C=1.0)
-        model.fit(Gram_train, y_train)
-        train_time = (time.time() - start_train) * 1000
+    # Cấu hình siêu tham số chuẩn hóa tối ưu cho Iris
+    if kernel == "poly":
+        model = SVC(kernel="poly", degree=3, C=1.0, coef0=1.0, gamma="scale")
+    elif kernel == "rbf":
+        model = SVC(kernel="rbf", C=1.0, gamma="scale")
+    elif kernel == "sigmoid":
+        model = SVC(kernel="sigmoid", C=1.0, gamma="scale", coef0=0.0)
+    else: # linear
+        model = SVC(kernel="linear", C=1.0)
 
-        start_pred = time.time()
-        y_pred = model.predict(Gram_test)
-        pred_time = (time.time() - start_pred) * 1000
-    else:
-        # Cấu hình siêu tham số chuẩn hóa tối ưu cho Iris
-        if kernel == "poly":
-            model = SVC(kernel="poly", degree=3, C=1.0, coef0=1.0, gamma="scale")
-        elif kernel == "rbf":
-            model = SVC(kernel="rbf", C=1.0, gamma="scale")
-        elif kernel == "sigmoid":
-            model = SVC(kernel="sigmoid", C=1.0, gamma="scale", coef0=0.0)
-        else: # linear
-            model = SVC(kernel="linear", C=1.0)
+    start_train = time.time()
+    model.fit(X_train, y_train)
+    train_time = (time.time() - start_train) * 1000
 
-        start_train = time.time()
-        model.fit(X_train, y_train)
-        train_time = (time.time() - start_train) * 1000
-
-        start_pred = time.time()
-        y_pred = model.predict(X_test)
-        pred_time = (time.time() - start_pred) * 1000
+    start_pred = time.time()
+    y_pred = model.predict(X_test)
+    pred_time = (time.time() - start_pred) * 1000
 
     # Tính toán toàn bộ các chỉ số chất lượng học máy
     acc = float(accuracy_score(y_test, y_pred))
@@ -103,8 +85,7 @@ for kernel in kernels:
         "linear": "SVM (Linear - Tuyến tính)",
         "rbf": "SVM (RBF - Phi tuyến Gaussian)",
         "poly": "SVM (Polynomial - Đa thức bậc 3)",
-        "sigmoid": "SVM (Sigmoid - Hàm Hyperbolic)",
-        "precomputed": "SVM (Precomputed - Ma trận Gram)"
+        "sigmoid": "SVM (Sigmoid - Hàm Hyperbolic)"
     }
 
     metrics_results[kernel] = {
@@ -153,7 +134,7 @@ with open("weights.json", "w", encoding="utf-8") as f:
 
 print("\n================================================================")
 print("✓ ĐÃ XUẤT THÀNH CÔNG:")
-print("  - 5 models: svm_linear.pkl, svm_rbf.pkl, svm_poly.pkl, svm_sigmoid.pkl, svm_precomputed.pkl")
+print("  - 4 models: svm_linear.pkl, svm_rbf.pkl, svm_poly.pkl, svm_sigmoid.pkl")
 print("  - File metrics.json")
 print("  - File weights.json")
 print("  - Bộ vector tham chiếu X_train.npy, y_train.npy")
