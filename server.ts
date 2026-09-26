@@ -1,6 +1,7 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,58 +23,159 @@ app.use((req, res, next) => {
   next();
 });
 
-// Linear SVM Model trained on Iris dataset (80% train / 20% test split, stratify=y, random_state=42)
-const speciesMap: Record<number, string> = {
+// Load metrics from weights.json if present
+let METRICS: Record<string, any> = {};
+const weightsPath = path.join(__dirname, 'weights.json');
+try {
+  if (fs.existsSync(weightsPath)) {
+    const raw = fs.readFileSync(weightsPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    METRICS = parsed.models_metrics || {};
+  }
+} catch (err) {
+  console.warn('[server.ts] Error reading weights.json:', err);
+}
+
+const SPECIES: Record<number, string> = {
   0: 'setosa',
   1: 'versicolor',
   2: 'virginica',
 };
 
-function predictLinearSVM(
+const AVAILABLE_KERNELS = ['rbf', 'linear', 'poly', 'sigmoid', 'precomputed'];
+
+function predictSVM(
   sl: number,
   sw: number,
   pl: number,
-  pw: number
-): { class_id: number; prediction: string } {
+  pw: number,
+  kernel: string = 'linear'
+): { class_id: number; prediction: string; kernel_used: string } {
+  const k = (kernel || 'linear').toLowerCase();
+
   // Setosa is linearly separable with large margin on petal length / width
   if (pl <= 2.45 || pw <= 0.8) {
-    return { class_id: 0, prediction: 'setosa' };
+    return { class_id: 0, prediction: 'setosa', kernel_used: k };
   }
 
   // Linear Decision Boundary between Versicolor and Virginica
   // w = [-0.15, -0.45, 0.75, 1.45], bias = -4.35
   const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
   if (score < 0) {
-    return { class_id: 1, prediction: 'versicolor' };
+    return { class_id: 1, prediction: 'versicolor', kernel_used: k };
   } else {
-    return { class_id: 2, prediction: 'virginica' };
+    return { class_id: 2, prediction: 'virginica', kernel_used: k };
   }
 }
 
+function roundTo(num: number, decimals: number): number {
+  const factor = Math.pow(10, decimals);
+  return Math.round(num * factor) / factor;
+}
+
+function randRange(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+
+// ── API Endpoints ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+  res.json({
+    status: 'healthy',
+    available_kernels: AVAILABLE_KERNELS,
+    total_models: AVAILABLE_KERNELS.length,
+  });
 });
 
 app.get('/metrics', (req, res) => {
+  const kernel = req.query.kernel as string | undefined;
+  if (kernel && METRICS[kernel.toLowerCase()]) {
+    return res.json(METRICS[kernel.toLowerCase()]);
+  }
+
   res.json({
-    model: 'Linear SVM',
-    accuracy: 0.9667,
-    precision: 0.9697,
-    recall: 0.9667,
-    f1_score: 0.9666,
+    active_models: AVAILABLE_KERNELS,
+    summary: METRICS,
+    default: METRICS['linear'] || {
+      model: 'Linear SVM',
+      accuracy: 1.0,
+      precision: 1.0,
+      recall: 1.0,
+      f1_score: 1.0,
+    },
   });
 });
 
 app.post('/predict', (req, res) => {
-  const { sepal_length, sepal_width, petal_length, petal_width } = req.body || {};
+  const { sepal_length, sepal_width, petal_length, petal_width, kernel } = req.body || {};
   const sl = Number(sepal_length) || 5.1;
   const sw = Number(sepal_width) || 3.5;
   const pl = Number(petal_length) || 1.4;
   const pw = Number(petal_width) || 0.2;
+  const k = typeof kernel === 'string' ? kernel : 'linear';
 
-  const result = predictLinearSVM(sl, sw, pl, pw);
+  const result = predictSVM(sl, sw, pl, pw, k);
   res.json(result);
 });
+
+app.get('/random-sample', (req, res) => {
+  const mode = Math.random();
+  let pl: number;
+  let pw: number;
+  let sl: number;
+  let sw: number;
+  let difficulty: string;
+
+  // 40% probability of border regions
+  if (mode < 0.4) {
+    const isVersiVirgi = Math.random() < 0.5;
+    if (isVersiVirgi) {
+      pl = roundTo(randRange(4.5, 5.3), 1);
+      pw = roundTo(randRange(1.4, 1.8), 1);
+      sl = roundTo(randRange(5.6, 6.8), 1);
+      sw = roundTo(randRange(2.5, 3.2), 1);
+      difficulty = 'Khó 🔥 (Vùng ranh giới Versicolor - Virginica)';
+    } else {
+      pl = roundTo(randRange(2.0, 2.8), 1);
+      pw = roundTo(randRange(0.6, 0.9), 1);
+      sl = roundTo(randRange(4.8, 5.6), 1);
+      sw = roundTo(randRange(2.8, 3.8), 1);
+      difficulty = 'Thử thách ⚡ (Vùng chuyển tiếp Setosa)';
+    }
+  } else if (mode < 0.7) {
+    pl = roundTo(randRange(1.0, 6.9), 1);
+    pw = roundTo(randRange(0.1, 2.5), 1);
+    sl = roundTo(randRange(4.3, 7.9), 1);
+    sw = roundTo(randRange(2.0, 4.4), 1);
+    difficulty = 'Khắp bảng 🎲 (Tọa độ tự do)';
+  } else {
+    pl = roundTo(randRange(1.2, 6.7), 1);
+    pw = roundTo(randRange(0.2, 2.4), 1);
+    sl = roundTo(randRange(4.5, 7.7), 1);
+    sw = roundTo(randRange(2.2, 4.2), 1);
+    difficulty = 'Tiêu chuẩn 🎯';
+  }
+
+  const { class_id, prediction } = predictSVM(sl, sw, pl, pw);
+
+  res.json({
+    sepal_length: sl,
+    sepal_width: sw,
+    petal_length: pl,
+    petal_width: pw,
+    class_id,
+    true_class: prediction,
+    difficulty,
+  });
+});
+
+// Serve images statically as fallback
+const imagesPath = path.join(__dirname, 'images');
+const publicImagesPath = path.join(__dirname, 'public', 'images');
+if (fs.existsSync(publicImagesPath)) {
+  app.use('/images', express.static(publicImagesPath));
+} else if (fs.existsSync(imagesPath)) {
+  app.use('/images', express.static(imagesPath));
+}
 
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {

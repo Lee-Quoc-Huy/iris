@@ -1,5 +1,5 @@
 /**
- * Iris SVM - Complete Engine, UI Controller & Supabase Integration
+ * Iris SVM - Complete Engine, Modern Twilight UI Controller & Supabase Integration
  */
 import { createClient } from '@supabase/supabase-js';
 
@@ -52,6 +52,13 @@ const ACTIVE_IRIS_DATASET = [
   ...IRIS_DATASET.filter(d => d[4] === 2).slice(0, 20)
 ];
 
+// Species color palette
+const SPECIES_COLORS = {
+  setosa: '#4ade80',
+  versicolor: '#f59e0b', // Vàng hổ phách amber
+  virginica: '#c084fc'
+};
+
 // =====================================================================
 // 2. SVM MATHEMATICAL ENGINE (DETERMINISTIC SMO MULTI-CLASS OvR)
 // =====================================================================
@@ -69,18 +76,12 @@ function computeKernel(x1, x2, kernel, gamma, degree = 3, coef0 = 1.0) {
   return Math.exp(-gamma * dsq);
 }
 
-/**
- * Thuật toán Huấn luyện SVM Nhị phân XÁC ĐỊNH 100% (Deterministic Platt's SMO).
- * Tuyệt đối không dùng Math.random() để đảm bảo cùng 1 bộ dữ liệu và tham số
- * thì siêu phẳng và Decision Boundary luôn ra kết quả giống nhau 100%, không bị nhảy hình!
- */
 function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
   const n = X.length;
   const alphas = new Float64Array(n);
   const errors = new Float64Array(n);
   let b = 0.0;
 
-  // 1. Tiền tính toán ma trận Kernel đối xứng K (Gram Matrix)
   const K = Array.from({ length: n }, () => new Float64Array(n));
   for (let i = 0; i < n; i++) {
     for (let j = i; j < n; j++) {
@@ -90,7 +91,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
     }
   }
 
-  // Khởi tạo sai số ban đầu: E_i = f(x_i) - y_i = b - y_i = -y_i
   for (let i = 0; i < n; i++) {
     errors[i] = -y[i];
   }
@@ -142,7 +142,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
 
     const a1 = alpha1 + s * (alpha2 - a2);
 
-    // Cập nhật ngưỡng b một cách tất định
     const b1 = b - E1 - y1 * (a1 - alpha1) * k11 - y2 * (a2 - alpha2) * k12;
     const b2 = b - E2 - y1 * (a1 - alpha1) * k12 - y2 * (a2 - alpha2) * k22;
 
@@ -156,7 +155,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
     alphas[i1] = a1;
     alphas[i2] = a2;
 
-    // Cập nhật lại errors cho tất cả mẫu
     for (let k = 0; k < n; k++) {
       errors[k] += y1 * (a1 - alpha1) * K[i1][k] + y2 * (a2 - alpha2) * K[i2][k] + deltaB;
     }
@@ -170,9 +168,7 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
     const E2 = errors[i2];
     const r2 = E2 * y2;
 
-    // Kiểm tra điều kiện Karush-Kuhn-Tucker (KKT)
     if ((r2 < -tol && alpha2 < C) || (r2 > tol && alpha2 > 0)) {
-      // Heuristic 1: Tìm i1 có |E1 - E2| cực đại trong số các mẫu non-bound
       let maxDelta = -1;
       let i1 = -1;
       for (let k = 0; k < n; k++) {
@@ -186,7 +182,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
       }
       if (i1 >= 0 && takeStep(i1, i2)) return 1;
 
-      // Heuristic 2: Duyệt vòng tuần hoàn xác định bắt đầu từ i2 qua non-bound examples
       for (let k = 0; k < n; k++) {
         const idx = (i2 + k) % n;
         if (alphas[idx] > 0 && alphas[idx] < C) {
@@ -194,7 +189,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
         }
       }
 
-      // Heuristic 3: Duyệt vòng tuần hoàn xác định bắt đầu từ i2 qua toàn bộ tập mẫu
       for (let k = 0; k < n; k++) {
         const idx = (i2 + k) % n;
         if (takeStep(idx, i2)) return 1;
@@ -203,7 +197,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
     return 0;
   }
 
-  // Vòng lặp hội tụ SMO chính
   let numChanged = 0;
   let examineAll = 1;
   let iter = 0;
@@ -230,7 +223,6 @@ function trainBinarySVM(X, y, C, kernel, gamma, degree = 3, coef0 = 1.0) {
     iter++;
   }
 
-  // Trích xuất các Vector hỗ trợ (Support Vectors)
   const svIndices = [];
   const svWeights = [];
   for (let i = 0; i < n; i++) {
@@ -289,28 +281,20 @@ function trainMultiClassSVM(X_train, y_train, C, kernel, gamma, degree = 3, coef
 }
 
 // =====================================================================
-// 3. USER AUTHENTICATION & SUPABASE SESSION (MỤC VII, VIII, IX)
+// 3. USER AUTHENTICATION & SUPABASE SESSION
 // =====================================================================
 const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'https://zivdfypkmalrlgojdlmy.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdmRmeXBrbWFscmxnb2pkbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNDkzNzksImV4cCI6MjEwNTgyNTM3OX0.0we8qj9_F9kQNy3t53ogL77iVe2QAHh3KCVky_cHAf8';
 
 export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabaseClient;
-console.log('✓ Đã khởi tạo Supabase Client thành công:', SUPABASE_URL);
 
 let currentUser = {
   id: 'guest_user',
   email: '',
-  name: '',
-  role: 'USER' // 'USER' or 'ADMIN'
+  name: 'Khách',
+  role: 'USER'
 };
-
-export function toValidUUID(id) {
-  if (typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
-    return id;
-  }
-  return null;
-}
 
 let decisionChartInstance = null;
 let guessChartInstance = null;
@@ -322,7 +306,15 @@ let userHistory = [];
 let userTimeline = [];
 let allSystemExperiments = [];
 
-// Initialize Local/Supabase Storage & Auth Gate Verification
+const guessStats = {
+  total: 0,
+  correct: 0,
+  wrong: 0
+};
+
+// =====================================================================
+// 4. SESSION & UI INITIALIZATION
+// =====================================================================
 function initUserSession() {
   const gate = document.getElementById('authGateScreen');
   let hasValidSession = false;
@@ -345,7 +337,6 @@ function initUserSession() {
     updateUserUI();
     loadUserData();
   } else {
-    // BẮT BUỘC ĐĂNG NHẬP: Mở màn hình Auth Gate
     if (gate) gate.classList.remove('hidden');
   }
 }
@@ -353,20 +344,21 @@ function initUserSession() {
 function updateUserUI() {
   const displayEmail = document.getElementById('userDisplayName');
   const roleBadge = document.getElementById('userRoleBadge');
-  const adminSection = document.getElementById('adminNavSection');
-  const editAboutBtn = document.getElementById('editAboutBtn');
+  const adminNavPill = document.getElementById('adminNavPillSection');
+  const mobileAdminSec = document.getElementById('mobileAdminSection');
 
-  if (displayEmail) displayEmail.innerText = currentUser.name || currentUser.email || 'Chưa đăng nhập';
+  if (displayEmail) displayEmail.innerText = currentUser.name || currentUser.email || 'Khách';
   if (roleBadge) {
     roleBadge.innerText = currentUser.role || 'USER';
-    roleBadge.className = `role-badge ${(currentUser.role || 'user').toLowerCase()}`;
+    roleBadge.className = `text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${currentUser.role === 'ADMIN' ? 'bg-[#f2c14e]/30 text-[#f2c14e]' : 'bg-white/20 text-white'}`;
   }
 
-  if (adminSection) {
-    adminSection.style.display = (currentUser.role === 'ADMIN') ? 'block' : 'none';
+  const isAdmin = currentUser.role === 'ADMIN';
+  if (adminNavPill) {
+    adminNavPill.style.display = isAdmin ? 'flex' : 'none';
   }
-  if (editAboutBtn) {
-    editAboutBtn.style.display = (currentUser.role === 'ADMIN') ? 'inline-block' : 'none';
+  if (mobileAdminSec) {
+    mobileAdminSec.style.display = isAdmin ? 'flex' : 'none';
   }
 }
 
@@ -391,12 +383,11 @@ async function loadUserData() {
   renderTimeline();
   renderBenchmarkTable();
 
-  // ĐỒNG BỘ TRỰC TIẾP TỪ SUPABASE NẾU ĐÃ ĐĂNG NHẬP
+  // ĐỒNG BỘ SUPABASE CHO RIÊNG TÀI KHOẢN (YÊU CẦU II.5)
   if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
     try {
-      // 1. Tải lịch sử nhận diện (prediction_history)
       let query = supabaseClient.from('prediction_history').select('*').order('created_at', { ascending: false });
-      if (currentUser.role !== 'ADMIN' && currentUser.id && currentUser.id !== 'guest_user') {
+      if (currentUser.role !== 'ADMIN') {
         query = query.eq('user_id', currentUser.id);
       }
       const { data: predData, error: predErr } = await query;
@@ -415,19 +406,20 @@ async function loadUserData() {
         renderHistoryTable();
       }
     } catch (err) {
-      console.warn('Lỗi tải prediction_history từ Supabase:', err);
+      console.warn('Lỗi tải prediction_history:', err);
     }
 
     try {
-      // 2. Tải lịch sử thí nghiệm & Benchmark (experiment_history)
       let expQuery = supabaseClient.from('experiment_history').select('*').order('created_at', { ascending: false });
-      if (currentUser.role !== 'ADMIN' && currentUser.id && currentUser.id !== 'guest_user') {
+      if (currentUser.role !== 'ADMIN') {
         expQuery = expQuery.eq('user_id', currentUser.id);
       }
       const { data: expData, error: expErr } = await expQuery;
       if (!expErr && expData) {
         userTimeline = expData.map(e => ({
           id: e.id,
+          userName: e.user_id === currentUser.id ? (currentUser.name || currentUser.email) : 'User',
+          userId: e.user_id,
           kernel: e.kernel,
           C: e.c_param,
           gamma: e.gamma_param,
@@ -444,32 +436,45 @@ async function loadUserData() {
         }));
         allSystemExperiments = [...userTimeline];
         localStorage.setItem(userPrefix + 'timeline', JSON.stringify(userTimeline));
-        localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
         renderTimeline();
         renderBenchmarkTable();
       }
     } catch (err) {
-      console.warn('Lỗi tải experiment_history từ Supabase:', err);
+      console.warn('Lỗi tải experiment_history:', err);
     }
   }
 }
 
 // =====================================================================
-// 4. NAVIGATION CONTROLLER
+// 5. NAVIGATION CONTROLLER (FLOATING PILL & TABS)
 // =====================================================================
 window.showPage = function(pageId, button, titleText, subText) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('aside button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab-btn').forEach(b => {
+    b.classList.remove('active', 'bg-[#e8702a]', 'text-white');
+    b.classList.add('text-white/80');
+  });
 
   const page = document.getElementById(pageId);
   if (page) page.classList.add('active');
-  if (button) button.classList.add('active');
 
-  if (titleText) document.getElementById('pageHeaderTitle').innerText = titleText;
-  if (subText) document.getElementById('pageHeaderSub').innerText = subText;
+  if (button) {
+    button.classList.add('active', 'bg-[#e8702a]', 'text-white');
+    button.classList.remove('text-white/80');
+  } else {
+    // If navigating by logo to homePage
+    const homeBtn = document.getElementById('navHome');
+    if (pageId === 'homePage' && homeBtn) {
+      homeBtn.classList.add('active', 'bg-[#e8702a]', 'text-white');
+      homeBtn.classList.remove('text-white/80');
+    }
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (pageId === 'predictPage') {
-    trainAndRenderBoundary();
+    // YÊU CẦU II.6: KHÔNG tự động lưu vào benchmark khi mới vào trang Nhận diện
+    trainAndRenderBoundary(false);
   } else if (pageId === 'guessPage') {
     if (!guessChartInstance) generateRandomSample();
   } else if (pageId === 'benchmarkPage') {
@@ -483,8 +488,27 @@ window.showPage = function(pageId, button, titleText, subText) {
   }
 };
 
+window.toggleMobileNav = function() {
+  const drawer = document.getElementById('mobileNavDrawer');
+  if (drawer) {
+    const isHidden = drawer.classList.contains('hidden');
+    if (isHidden) {
+      drawer.classList.remove('hidden');
+      drawer.classList.add('flex');
+    } else {
+      drawer.classList.add('hidden');
+      drawer.classList.remove('flex');
+    }
+  }
+};
+
+window.showPageMobile = function(pageId, title, sub) {
+  window.toggleMobileNav();
+  window.showPage(pageId, null, title, sub);
+};
+
 // =====================================================================
-// 5. PREDICTION & LIVE INTERACTIVE CHART (MỤC II & III)
+// 6. PREDICTION & LIVE INTERACTIVE CHART (MỤC I & II)
 // =====================================================================
 window.syncInput = function(rangeId, inputId) {
   const rangeEl = document.getElementById(rangeId);
@@ -509,22 +533,19 @@ window.setPreset = function(sl, sw, pl, pw) {
   document.getElementById('range_petal_length').value = pl;
   document.getElementById('petal_width').value = pw;
   document.getElementById('range_petal_width').value = pw;
-  predict();
+  window.predict();
 };
 
 window.resetForm = function() {
   window.setPreset(5.1, 3.5, 1.4, 0.2);
 };
 
-// predictLinearFast: phương án dự phòng khi API không phản hồi
-// Boundary này sát với sklearn SVC(kernel='linear') từ app.py
 function predictLinearFast(sl, sw, pl, pw) {
   if (pl <= 2.45 || pw <= 0.8) return 'setosa';
   const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
   return score >= 0 ? 'virginica' : 'versicolor';
 }
 
-// Gọi Python FastAPI /predict để có kết quả chính xác từ 5 model SVM
 async function callPredictAPI(sl, sw, pl, pw, kernel) {
   try {
     const k = (kernel || document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
@@ -538,11 +559,11 @@ async function callPredictAPI(sl, sw, pl, pw, kernel) {
       const data = await res.json();
       return data.prediction;
     }
-  } catch (e) { /* fallback về local */ }
+  } catch (e) {}
   return predictLinearFast(sl, sw, pl, pw);
 }
 
-window.predict = async function() {
+window.predict = async function(forcedSpecies = null) {
   const sl = parseFloat(document.getElementById('sepal_length').value) || 5.1;
   const sw = parseFloat(document.getElementById('sepal_width').value) || 3.5;
   const pl = parseFloat(document.getElementById('petal_length').value) || 1.4;
@@ -553,57 +574,48 @@ window.predict = async function() {
   document.getElementById('res_petal_length').innerText = pl + ' cm';
   document.getElementById('res_petal_width').innerText = pw + ' cm';
 
-  let prediction = 'setosa';
-  if (currentTrainedSVM) {
-    const pred = currentTrainedSVM.predictSample([sl, sw, pl, pw]);
-    prediction = SPECIES_NAMES[pred.classIndex] || 'setosa';
-  } else {
-    try {
-      const k = (document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
-      const res = await fetch('/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sepal_length: sl, sepal_width: sw, petal_length: pl, petal_width: pw, kernel: k })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        prediction = data.prediction;
-      } else {
+  let prediction = forcedSpecies;
+  if (!prediction) {
+    if (currentTrainedSVM) {
+      const pred = currentTrainedSVM.predictSample([sl, sw, pl, pw]);
+      prediction = SPECIES_NAMES[pred.classIndex] || 'setosa';
+    } else {
+      try {
+        const k = (document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sepal_length: sl, sepal_width: sw, petal_length: pl, petal_width: pw, kernel: k })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          prediction = data.prediction;
+        } else {
+          prediction = predictLinearFast(sl, sw, pl, pw);
+        }
+      } catch (e) {
         prediction = predictLinearFast(sl, sw, pl, pw);
       }
-    } catch (e) {
-      prediction = predictLinearFast(sl, sw, pl, pw);
     }
   }
 
   const flowerFormatted = 'Iris ' + prediction.charAt(0).toUpperCase() + prediction.slice(1);
   document.getElementById('flowerName').innerText = flowerFormatted;
-  document.getElementById('flowerImage').src = `images/${prediction}.jpg`;
+  document.getElementById('flowerImage').src = `/images/${prediction}.jpg`;
 
   updateLiveSelectionPoint();
 
-  // Đồng bộ thẻ kết quả bên dưới nếu đang hiển thị
-  const inlineCard = document.getElementById('trainingInlineResultCard');
-  if (inlineCard && inlineCard.style.display !== 'none' && currentTrainedSVM) {
-    const k = (document.getElementById('svmKernel')?.value || 'rbf').toLowerCase();
-    const cVal = parseFloat(document.getElementById('cInput')?.value) || 1.0;
-    const gVal = parseFloat(document.getElementById('gammaInput')?.value) || 0.5;
-    const dVal = parseInt(document.getElementById('degreeInput')?.value) || 3;
-    const fXName = FEATURE_NAMES[activeFeatX];
-    const fYName = FEATURE_NAMES[activeFeatY];
-    renderTrainingInlineResult(currentTrainedSVM, k, cVal, gVal, dVal, 96.0, { sl, sw, pl, pw }, fXName, fYName);
-  }
-
+  // Lưu lịch sử nhận diện của tài khoản (YÊU CẦU II.5)
   saveUserPrediction(sl, sw, pl, pw, prediction, 'Tương tác trực quan');
 };
 
 // =====================================================================
-// 6. HUẤN LUYỆN & DECISION BOUNDARY ENGINE (MỤC II, III, IV)
+// 7. HUẤN LUYỆN & DECISION BOUNDARY ENGINE (YÊU CẦU II.6 & II.7)
 // =====================================================================
 let cachedMeshGrid = null;
 let currentTrainedSVM = null;
-let activeFeatX = 2; // Default Petal Length
-let activeFeatY = 3; // Default Petal Width
+let activeFeatX = 2; // Petal Length
+let activeFeatY = 3; // Petal Width
 
 const FEATURE_INPUT_IDS = [
   { num: 'sepal_length', range: 'range_sepal_length', label: 'Sepal Length' },
@@ -623,7 +635,9 @@ function setFeatureValue(idx, val) {
   if (!item) return;
   const numEl = document.getElementById(item.num);
   const rangeEl = document.getElementById(item.range);
-  const clampedVal = +(Math.max(0.1, val)).toFixed(1);
+  const min = rangeEl ? parseFloat(rangeEl.min) || 0.1 : 0.1;
+  const max = rangeEl ? parseFloat(rangeEl.max) || 8.0 : 8.0;
+  const clampedVal = +(Math.min(max, Math.max(min, val))).toFixed(1);
   if (numEl) numEl.value = clampedVal;
   if (rangeEl) rangeEl.value = clampedVal;
 }
@@ -646,16 +660,20 @@ window.handleKernelChange = function() {
 
 window.handleFeatureAxisChange = function() {
   const fX = parseInt(document.getElementById('featureXSelect')?.value || '2');
-  const fY = parseInt(document.getElementById('featureYSelect')?.value || '3');
+  let fY = parseInt(document.getElementById('featureYSelect')?.value || '3');
 
   if (fX === fY) {
-    alert('Vui lòng chọn 2 đặc trưng khác nhau cho Trục X và Trục Y!');
-    const newY = (fX + 1) % 4;
-    document.getElementById('featureYSelect').value = newY;
+    fY = (fX + 1) % 4;
+    document.getElementById('featureYSelect').value = fY;
   }
 };
 
-window.trainAndRenderBoundary = function() {
+// YÊU CẦU II.6: CHỈ KHI BẤM NÚT NÀY MỚI LƯU LỊCH SỬ BENCHMARK
+window.trainAndRenderBoundaryManual = function() {
+  trainAndRenderBoundary(true);
+};
+
+function trainAndRenderBoundary(shouldSaveHistory = false) {
   const kernel = document.getElementById('svmKernel')?.value || 'rbf';
   const featXIdx = parseInt(document.getElementById('featureXSelect')?.value || '2');
   let featYIdx = parseInt(document.getElementById('featureYSelect')?.value || '3');
@@ -675,19 +693,30 @@ window.trainAndRenderBoundary = function() {
   const featXName = FEATURE_NAMES[featXIdx];
   const featYName = FEATURE_NAMES[featYIdx];
 
+  // YÊU CẦU II.7: ĐỌC TRẠNG THÁI CẢ 4 THÔNG SỐ ĐƯỢC CHỌN
+  const selectedFeaturesMask = [
+    document.getElementById('featCheck_0')?.checked ?? true,
+    document.getElementById('featCheck_1')?.checked ?? true,
+    document.getElementById('featCheck_2')?.checked ?? true,
+    document.getElementById('featCheck_3')?.checked ?? true,
+  ];
+
   const startTime = performance.now();
 
-  // 1. Chuẩn bị tập dữ liệu 4D thực tế từ 60 mẫu Iris Dataset
-  const X_4D = ACTIVE_IRIS_DATASET.map(d => [d[0], d[1], d[2], d[3]]);
-  const y_all = ACTIVE_IRIS_DATASET.map(d => d[4]);
-
-  // Tính giá trị trung bình (means) của 4 đặc trưng trên tập dữ liệu để cố định 2 feature không hiển thị
+  // Chuẩn bị dữ liệu 4D
   const featureMeans = [0, 1, 2, 3].map(featIdx => {
     const sum = ACTIVE_IRIS_DATASET.reduce((acc, row) => acc + row[featIdx], 0);
     return +(sum / ACTIVE_IRIS_DATASET.length).toFixed(4);
   });
 
-  // Huấn luyện Multi-class SVM (One-vs-Rest SMO) với toàn bộ 4 features
+  const X_4D = ACTIVE_IRIS_DATASET.map(d => [
+    selectedFeaturesMask[0] ? d[0] : featureMeans[0],
+    selectedFeaturesMask[1] ? d[1] : featureMeans[1],
+    selectedFeaturesMask[2] ? d[2] : featureMeans[2],
+    selectedFeaturesMask[3] ? d[3] : featureMeans[3],
+  ]);
+  const y_all = ACTIVE_IRIS_DATASET.map(d => d[4]);
+
   const coef0 = (kernel === 'poly') ? 1.0 : 0.0;
   const multiSVM = trainMultiClassSVM(X_4D, y_all, C, kernel, gamma, degree, coef0);
   currentTrainedSVM = multiSVM;
@@ -695,7 +724,7 @@ window.trainAndRenderBoundary = function() {
   const endTime = performance.now();
   const execTime = +(endTime - startTime).toFixed(2);
 
-  // 2. Đánh giá kiểm thử Confusion Matrix trên 60 mẫu cố định (20 mẫu mỗi loài) với 4 features
+  // Đánh giá Confusion Matrix
   let correct = 0;
   const confusion = [[0,0,0],[0,0,0],[0,0,0]];
   X_4D.forEach((x4, i) => {
@@ -718,7 +747,7 @@ window.trainAndRenderBoundary = function() {
   const recall = +(sumR / 3).toFixed(3);
   const f1 = +((2 * precision * recall) / (precision + recall || 1)).toFixed(3);
 
-  // 3. Tính toán Lưới Điểm (Mesh Grid) cho Decision Boundary 2D (chiếu từ model 4D)
+  // Mesh Grid 2D chiếu lên Trục X & Trục Y
   const allX = ACTIVE_IRIS_DATASET.map(d => d[featXIdx]);
   const allY = ACTIVE_IRIS_DATASET.map(d => d[featYIdx]);
   const minXRaw = Math.min(...allX), maxXRaw = Math.max(...allX);
@@ -731,13 +760,11 @@ window.trainAndRenderBoundary = function() {
   const yMin = Math.max(0, +(minYRaw - padY).toFixed(2));
   const yMax = +(maxYRaw + padY).toFixed(2);
 
-  const resX = 100;
-  const resY = 100;
+  const resX = 80;
+  const resY = 80;
   const stepX = (xMax - xMin) / resX;
   const stepY = (yMax - yMin) / resY;
 
-  // Chuyển đổi mỗi điểm trên grid 2D thành vector 4 features [mean0, mean1, mean2, mean3]
-  // trước khi đưa vào model 4D dự đoán
   const gridData = [];
   for (let i = 0; i <= resX; i++) {
     gridData[i] = [];
@@ -763,61 +790,37 @@ window.trainAndRenderBoundary = function() {
     featureMeans
   };
 
-  // 4. Render Chart trực quan hóa Decision Boundary
   renderDecisionBoundaryChart(multiSVM, featXIdx, featYIdx, featXName, featYName, kernel, C, gamma, degree, accuracy);
 
-  // 5. Cập nhật giải thích toán học dưới biểu đồ
-  const eqText = document.getElementById('boundaryEquationText');
-  if (eqText) {
-    let kernelDesc = '';
-    if (kernel === 'linear') {
-      kernelDesc = '<b>Mô hình Tuyến tính (Linear Hyperplane):</b> Ranh giới quyết định là các đường thẳng $w^T x + b = 0$ phân chia tối ưu không gian 2 đặc trưng.';
-    } else if (kernel === 'rbf') {
-      kernelDesc = `<b>Mô hình RBF (Gaussian Radial Basis):</b> Ranh giới quyết định uốn lượn phi tuyến theo hàm khoảng cách $K(x, x\') = \\exp(-\\gamma ||x - x\'||^2)$ với $\\gamma = ${gamma}$.`;
-    } else if (kernel === 'poly') {
-      kernelDesc = `<b>Mô hình Polynomial (Đa thức bậc ${degree}):</b> Ranh giới uốn cong theo không gian đa thức bậc cao $K(x, x\') = (\\gamma x^T x\' + 1)^d$.`;
-    } else if (kernel === 'sigmoid') {
-      kernelDesc = '<b>Mô hình Sigmoid:</b> Ánh xạ phi tuyến theo hàm hyperbolic tangent $\\tanh(\\gamma x^T x\' + c)$.';
-    } else {
-      kernelDesc = '<b>Mô hình Precomputed:</b> Tích vô hướng trực tiếp giữa các vector mẫu.';
-    }
+  const sl = parseFloat(document.getElementById('sepal_length')?.value) || 5.1;
+  const sw = parseFloat(document.getElementById('sepal_width')?.value) || 3.5;
+  const pl = parseFloat(document.getElementById('petal_length')?.value) || 1.4;
+  const pw = parseFloat(document.getElementById('petal_width')?.value) || 0.2;
 
-    eqText.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-        <span style="color:#1e1b4b; font-weight:800; font-size:13px;">🎯 Ranh giới Quyết định (Decision Boundary) & Siêu phẳng SVM</span>
-        <span style="font-size:12px; background:#eff6ff; color:#1e40af; padding:3px 10px; border-radius:6px; font-weight:700; border:1px solid #bfdbfe;">⭐ Support Vectors: ${multiSVM.svIndices.length} điểm</span>
-      </div>
-      <div style="font-size:12.5px; line-height:1.5; color:#475569;">
-        ${kernelDesc}<br>
-        <span style="color:#6366f1;">💡 <b>Tương tác nhanh:</b> Nhấp chuột vào bất kỳ vị trí nào trên biểu đồ để chuyển điểm thử nghiệm đến tọa độ đó và nhận diện tức thì.</span>
-      </div>
-    `;
+  // YÊU CẦU II.6: CHỈ KHI shouldSaveHistory == true THÌ MỚI GHI VÀO TIMELINE & BENCHMARK
+  if (shouldSaveHistory) {
+    const selectedFeatNames = [0, 1, 2, 3]
+      .filter(i => selectedFeaturesMask[i])
+      .map(i => FEATURE_NAMES[i]);
+
+    addTimelineItem({
+      kernel,
+      C,
+      gamma,
+      features: selectedFeatNames.length === 4 ? ['Cả 4 đặc trưng'] : selectedFeatNames,
+      inputValues: { sl, sw, pl, pw },
+      accuracy,
+      precision,
+      recall,
+      f1,
+      svCount: multiSVM.svIndices.length,
+      execTime,
+      timestamp: new Date().toLocaleTimeString('vi-VN')
+    });
   }
 
-  const sl = parseFloat(document.getElementById('sepal_length')?.value || document.getElementById('sepalLength')?.value) || 5.1;
-  const sw = parseFloat(document.getElementById('sepal_width')?.value || document.getElementById('sepalWidth')?.value) || 3.5;
-  const pl = parseFloat(document.getElementById('petal_length')?.value || document.getElementById('petalLength')?.value) || 1.4;
-  const pw = parseFloat(document.getElementById('petal_width')?.value || document.getElementById('petalWidth')?.value) || 0.2;
-
-  // 6. Ghi nhận vào Timeline & Benchmark
-  addTimelineItem({
-    kernel,
-    C,
-    gamma,
-    features: [featXName, featYName],
-    inputValues: { sl, sw, pl, pw },
-    accuracy,
-    precision,
-    recall,
-    f1,
-    svCount: multiSVM.svIndices.length,
-    execTime,
-    timestamp: new Date().toLocaleTimeString('vi-VN')
-  });
-
-  // 7. Hiển thị kết quả phân loại hoa ngay tại chỗ (bên dưới biểu đồ, không cần lướt lên trên)
   renderTrainingInlineResult(multiSVM, kernel, C, gamma, degree, accuracy, { sl, sw, pl, pw }, featXName, featYName);
-};
+}
 
 function renderTrainingInlineResult(multiSVM, kernel, C, gamma, degree, accuracy, inputs, featXName, featYName) {
   const container = document.getElementById('trainingInlineResultCard');
@@ -825,121 +828,356 @@ function renderTrainingInlineResult(multiSVM, kernel, C, gamma, degree, accuracy
 
   const currentX = getFeatureValue(activeFeatX);
   const currentY = getFeatureValue(activeFeatY);
-  const current4D = [inputs.sl, inputs.sw, inputs.pl, inputs.pw];
-  const pred4D = multiSVM.predictSample(current4D);
-  const predSpecies = SPECIES_NAMES[pred4D.classIndex] || 'setosa';
+  const speciesIdx = getSpeciesAtCoord(currentX, currentY);
+  const predSpecies = SPECIES_NAMES[speciesIdx] || 'setosa';
+
+  renderInteractiveClickResult(currentX, currentY, predSpecies, speciesIdx, null, {
+    kernel,
+    accuracy,
+    svCount: multiSVM.svIndices.length,
+    trained: true
+  });
+}
+
+// Hàm hiển thị kết quả trực tiếp ngay bên dưới bảng vẽ khi ấn vào bất kỳ vị trí nào
+function renderInteractiveClickResult(xVal, yVal, spKey, speciesIdx, sampleInfo = null, trainStats = null) {
+  const container = document.getElementById('trainingInlineResultCard');
+  if (!container) return;
 
   let flowerVi = 'Iris Setosa';
-  let flowerTagColor = '#15803d';
-  let flowerTagBg = '#dcfce7';
-  let flowerTagBorder = '#86efac';
-  let flowerTagText = '🌿 Xanh lá (Setosa)';
+  let flowerColor = '#4ade80';
+  let flowerRegionDesc = 'Khu vực cánh hoa siêu ngắn & nhỏ (< 2.5cm) – Tách biệt hoàn toàn (Màu xanh lục)';
 
-  if (predSpecies === 'versicolor') {
-    flowerVi = 'Iris Versicolor';
-    flowerTagColor = '#b45309';
-    flowerTagBg = '#fef3c7';
-    flowerTagBorder = '#fcd34d';
-    flowerTagText = '🌼 Vàng hổ phách (Versicolor)';
-  } else if (predSpecies === 'virginica') {
+  if (spKey === 'versicolor') {
+    flowerVi = 'Iris Versicolor (Vàng hổ phách)';
+    flowerColor = '#f59e0b';
+    flowerRegionDesc = 'Vùng cánh hoa trung bình (3.0 – 5.0cm) – Vùng chuyển tiếp (Vàng hổ phách)';
+  } else if (spKey === 'virginica') {
     flowerVi = 'Iris Virginica';
-    flowerTagColor = '#7e22ce';
-    flowerTagBg = '#f3e8ff';
-    flowerTagBorder = '#d8b4fe';
-    flowerTagText = '🌸 Tím mộng mơ (Virginica)';
+    flowerColor = '#c084fc';
+    flowerRegionDesc = 'Vùng cánh hoa cỡ lớn & rộng (> 4.8cm) – Phân lớp kích thước lớn nhất (Màu tím)';
   }
 
-  container.style.display = 'block';
+  const featXName = FEATURE_NAMES[activeFeatX];
+  const featYName = FEATURE_NAMES[activeFeatY];
+  const sl = getFeatureValue(0);
+  const sw = getFeatureValue(1);
+  const pl = getFeatureValue(2);
+  const pw = getFeatureValue(3);
+
+  container.className = 'mt-5 p-5 sm:p-6 rounded-2xl bg-white/[0.05] border-2 shadow-2xl transition-all block';
+  container.style.borderColor = `${flowerColor}80`;
+
   container.innerHTML = `
-    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 2px solid ${flowerTagBorder}; border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid #e2e8f0;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:20px;">🌸</span>
-          <div>
-            <h4 style="margin:0; font-size:15px; font-weight:800; color:#1e1b4b;">Kết quả Phân loại Mẫu hoa (Sau khi Huấn luyện SVM)</h4>
-            <div style="font-size:11.5px; color:#64748b;">Mô hình vừa huấn luyện đã phân loại tức thì cho thông số mẫu bạn đang chọn</div>
-          </div>
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-4 pb-3 border-b border-white/10">
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-sm" style="background: ${flowerColor}25; color: ${flowerColor}; border: 1px solid ${flowerColor}50;">🎯</span>
+        <div>
+          <h4 class="text-sm font-bold text-white flex items-center gap-2">
+            Kết quả nhận diện tại vị trí bạn ấn trên bảng vẽ
+          </h4>
+          <p class="text-[11px] text-white/60">Tọa độ ấn: ${featXName} = <b class="text-white">${xVal.toFixed(1)} cm</b> · ${featYName} = <b class="text-white">${yVal.toFixed(1)} cm</b></p>
         </div>
-        <span style="background:${flowerTagBg}; color:${flowerTagColor}; border:1px solid ${flowerTagBorder}; font-size:12px; font-weight:800; padding:4px 12px; border-radius:20px;">
-          ${flowerTagText}
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2" style="background: ${flowerColor}25; color: ${flowerColor}; border: 1px solid ${flowerColor}60;">
+          <span class="w-2.5 h-2.5 rounded-full animate-pulse" style="background: ${flowerColor};"></span>
+          ${flowerVi}
         </span>
       </div>
+    </div>
 
-      <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
-        <div style="width:100px; height:100px; border-radius:16px; overflow:hidden; border:3px solid ${flowerTagBorder}; flex-shrink:0; box-shadow:0 6px 14px rgba(0,0,0,0.08);">
-          <img src="images/${predSpecies}.jpg" alt="${flowerVi}" style="width:100%; height:100%; object-fit:cover;">
+    <div class="grid sm:grid-cols-[auto_1fr] gap-5 items-center">
+      <div class="relative group shrink-0">
+        <img src="/images/${spKey}.jpg" alt="${flowerVi}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 shadow-xl transition-all" style="border-color: ${flowerColor};" onerror="this.src='/images/${spKey}.svg'" />
+        <span class="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-black shadow-md uppercase tracking-wider" style="background: ${flowerColor};">VỊ TRÍ ẤN</span>
+      </div>
+
+      <div class="space-y-2 text-xs text-white/90">
+        <div class="text-base font-playfair font-bold text-white flex items-center gap-2">
+          <span>🌸</span> ${flowerVi}
         </div>
-
-        <div style="flex:1; min-width:240px;">
-          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-bottom:4px;">
-            Hoa ${flowerVi}
-          </div>
-          <div style="font-size:12.5px; color:#475569; line-height:1.6;">
-            • Tọa độ trên biểu đồ (${featXName} & ${featYName}): <b style="color:#1e1b4b;">(${currentX} cm, ${currentY} cm)</b><br>
-            • Toàn bộ 4 kích thước: Đài <b>${inputs.sl} × ${inputs.sw} cm</b> | Cánh <b>${inputs.pl} × ${inputs.pw} cm</b><br>
-            • Hạt nhân: <b>${kernel.toUpperCase()}</b> (C=${C}${kernel !== 'linear' ? `, γ=${gamma}` : ''}) | Độ chính xác (Accuracy): <b style="color:#059669;">${accuracy}%</b>
-          </div>
+        <div class="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-white/80 leading-relaxed">
+          📍 <b>Vùng phân loại SVM:</b> Điểm bạn vừa ấn nằm trong <b>${flowerRegionDesc}</b> của mô hình SVM trên bảng vẽ.
+          ${sampleInfo ? `<div class="mt-1 text-[#f2c14e] font-medium">✨ Bạn đã nhấp trúng mẫu hoa dữ liệu thực tế #${sampleInfo.idx + 1} của loài này!</div>` : ''}
+          ${trainStats ? `<div class="mt-1 text-emerald-400 font-medium">⚡ Mô hình SVM (${trainStats.kernel.toUpperCase()}) đạt độ chính xác ${trainStats.accuracy}% với ${trainStats.svCount} Support Vectors.</div>` : ''}
         </div>
-
-        <div style="display:flex; flex-direction:column; gap:8px; min-width:180px;">
-          <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; text-align:center;">
-            <div style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Trạng thái Phân loại</div>
-            <div style="font-size:15px; font-weight:800; color:${flowerTagColor}; margin-top:2px;">
-              ✓ Phân loại thành công
-            </div>
-          </div>
-          <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; font-size:11.5px; color:#64748b; text-align:center;">
-            ⭐ Support Vectors: <b>${multiSVM.svIndices.length}</b> mẫu điểm
-          </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">🌿 Sepal L: <b>${sl.toFixed(1)} cm</b></div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">🌿 Sepal W: <b>${sw.toFixed(1)} cm</b></div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">✨ Petal L: <b>${pl.toFixed(1)} cm</b></div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">✨ Petal W: <b>${pw.toFixed(1)} cm</b></div>
         </div>
       </div>
     </div>
   `;
 }
 
+// Hàm xác định loài tại tọa độ (x, y) trên không gian trực quan
+function getSpeciesAtCoord(x, y) {
+  if (!cachedMeshGrid) return 1;
+  const { xMin, xMax, yMin, yMax, resX, resY, gridData, multiSVM, featureMeans, featXIdx, featYIdx } = cachedMeshGrid;
+  if (x < xMin || x > xMax || y < yMin || y > yMax) {
+    if (multiSVM) {
+      const sample = [...featureMeans];
+      sample[featXIdx] = x;
+      sample[featYIdx] = y;
+      return multiSVM.predictSample(sample).classIndex;
+    }
+    return 1;
+  }
+  const i = Math.min(resX, Math.max(0, Math.round(((x - xMin) / (xMax - xMin || 1)) * resX)));
+  const j = Math.min(resY, Math.max(0, Math.round(((y - yMin) / (yMax - yMin || 1)) * resY)));
+  return gridData[i]?.[j] ?? 1;
+}
+
+// Bật / tắt hiển thị dataset trên Decision Boundary Chart
+window.toggleDatasetVisibility = function(datasetIndex) {
+  if (!decisionChartInstance) return;
+  const meta = decisionChartInstance.getDatasetMeta(datasetIndex);
+  if (!meta) return;
+  meta.hidden = meta.hidden === null ? !decisionChartInstance.data.datasets[datasetIndex].hidden : null;
+  decisionChartInstance.update();
+
+  const buttons = document.querySelectorAll('.legend-filter-btn');
+  if (buttons && buttons[datasetIndex]) {
+    if (meta.hidden) {
+      buttons[datasetIndex].classList.add('opacity-40', 'line-through');
+    } else {
+      buttons[datasetIndex].classList.remove('opacity-40', 'line-through');
+    }
+  }
+};
+
+// Đặt lại điểm mẫu thử về vị trí mặc định
+window.resetPointToCenter = function() {
+  window.resetForm();
+  updateLiveSelectionPoint();
+  const initX = getFeatureValue(activeFeatX);
+  const initY = getFeatureValue(activeFeatY);
+  const initSpIdx = getSpeciesAtCoord(initX, initY);
+  const initSpKey = SPECIES_NAMES[initSpIdx] || 'setosa';
+  renderInteractiveClickResult(initX, initY, initSpKey, initSpIdx, null);
+};
+
+let chartInteractivityInitialized = false;
+let isDraggingPoint = false;
+let dragRafId = null;
+
+function setupDecisionChartInteractivity() {
+  const canvas = document.getElementById('decisionChart');
+  if (!canvas || chartInteractivityInitialized) return;
+  chartInteractivityInitialized = true;
+
+  const hudCoords = document.getElementById('chartHudCoords');
+  const hudSpecies = document.getElementById('chartHudSpecies');
+  const sampleToast = document.getElementById('chartSampleToast');
+  const sampleToastText = document.getElementById('chartSampleToastText');
+
+  function showSampleToast(msg) {
+    if (!sampleToast || !sampleToastText) return;
+    sampleToastText.innerText = msg;
+    sampleToast.classList.remove('opacity-0');
+    sampleToast.classList.add('opacity-100');
+    clearTimeout(sampleToast._timer);
+    sampleToast._timer = setTimeout(() => {
+      sampleToast.classList.remove('opacity-100');
+      sampleToast.classList.add('opacity-0');
+    }, 2800);
+  }
+
+  function getCanvasCoords(evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      xPixel: evt.clientX - rect.left,
+      yPixel: evt.clientY - rect.top
+    };
+  }
+
+  function dataCoordsFromPixel(xPixel, yPixel) {
+    if (!decisionChartInstance || !decisionChartInstance.scales?.x || !decisionChartInstance.scales?.y) return null;
+    const xVal = decisionChartInstance.scales.x.getValueForPixel(xPixel);
+    const yVal = decisionChartInstance.scales.y.getValueForPixel(yPixel);
+    return { xVal, yVal };
+  }
+
+  function findNearestDatasetPoint(xPixel, yPixel, maxDistPx = 15) {
+    if (!decisionChartInstance || !decisionChartInstance.scales?.x || !decisionChartInstance.scales?.y) return null;
+    const xScale = decisionChartInstance.scales.x;
+    const yScale = decisionChartInstance.scales.y;
+    let nearest = null;
+    let minDist = maxDistPx;
+
+    ACTIVE_IRIS_DATASET.forEach((row, idx) => {
+      const px = xScale.getPixelForValue(row[activeFeatX]);
+      const py = yScale.getPixelForValue(row[activeFeatY]);
+      const dist = Math.hypot(px - xPixel, py - yPixel);
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = { row, idx, dist };
+      }
+    });
+    return nearest;
+  }
+
+  function updateHudAt(xVal, yVal) {
+    if (!hudCoords || !hudSpecies) return;
+    hudCoords.innerText = `${FEATURE_NAMES[activeFeatX]}: ${xVal.toFixed(1)} cm · ${FEATURE_NAMES[activeFeatY]}: ${yVal.toFixed(1)} cm`;
+    const cIdx = getSpeciesAtCoord(xVal, yVal);
+    if (cIdx === 0) {
+      hudSpecies.innerHTML = `<span class="text-[#4ade80] font-semibold">● Iris Setosa</span>`;
+    } else if (cIdx === 1) {
+      hudSpecies.innerHTML = `<span class="text-[#f59e0b] font-semibold">● Iris Versicolor (Vàng hổ phách)</span>`;
+    } else {
+      hudSpecies.innerHTML = `<span class="text-[#c084fc] font-semibold">● Iris Virginica</span>`;
+    }
+  }
+
+  function applyPointToModel(xVal, yVal, fullPredict = false, nearestSample = null) {
+    setFeatureValue(activeFeatX, xVal);
+    setFeatureValue(activeFeatY, yVal);
+    updateLiveSelectionPoint();
+
+    // 1. Xác định loài hoa tại tọa độ vừa ấn trên bảng vẽ
+    let speciesIdx;
+    if (nearestSample) {
+      speciesIdx = nearestSample.row[4];
+    } else {
+      speciesIdx = getSpeciesAtCoord(xVal, yVal);
+    }
+    const spKey = SPECIES_NAMES[speciesIdx] || 'setosa';
+
+    // 2. Cập nhật thẻ kết quả trực tiếp ngay bên dưới bảng vẽ
+    renderInteractiveClickResult(xVal, yVal, spKey, speciesIdx, nearestSample);
+
+    // 3. Cập nhật thẻ kết quả phía trên đồng bộ
+    if (fullPredict) {
+      window.predict(spKey);
+    } else {
+      if (dragRafId) cancelAnimationFrame(dragRafId);
+      dragRafId = requestAnimationFrame(() => {
+        window.predict(spKey);
+      });
+    }
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    isDraggingPoint = true;
+    canvas.style.cursor = 'grabbing';
+
+    const { xPixel, yPixel } = getCanvasCoords(e);
+    const nearest = findNearestDatasetPoint(xPixel, yPixel);
+    if (nearest) {
+      const { row, idx } = nearest;
+      const spName = SPECIES_NAMES[row[4]] || 'setosa';
+      const spVi = spName === 'setosa' ? 'Setosa' : spName === 'versicolor' ? 'Versicolor (Vàng hổ phách)' : 'Virginica';
+
+      setFeatureValue(0, row[0]);
+      setFeatureValue(1, row[1]);
+      setFeatureValue(2, row[2]);
+      setFeatureValue(3, row[3]);
+
+      applyPointToModel(row[activeFeatX], row[activeFeatY], true, nearest);
+      updateHudAt(row[activeFeatX], row[activeFeatY]);
+      showSampleToast(`🎯 Đã chọn mẫu #${idx + 1}: Iris ${spVi}`);
+      return;
+    }
+
+    const coords = dataCoordsFromPixel(xPixel, yPixel);
+    if (coords && coords.xVal != null && coords.yVal != null) {
+      applyPointToModel(coords.xVal, coords.yVal, true, null);
+      updateHudAt(coords.xVal, coords.yVal);
+      const spIdx = getSpeciesAtCoord(coords.xVal, coords.yVal);
+      const spName = SPECIES_NAMES[spIdx] || 'setosa';
+      const spVi = spName === 'setosa' ? 'Setosa' : spName === 'versicolor' ? 'Versicolor (Vàng hổ phách)' : 'Virginica';
+      showSampleToast(`🎯 Vị trí ấn trên bảng: Iris ${spVi}`);
+    }
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    const { xPixel, yPixel } = getCanvasCoords(e);
+    const coords = dataCoordsFromPixel(xPixel, yPixel);
+    if (!coords) return;
+
+    if (isDraggingPoint) {
+      applyPointToModel(coords.xVal, coords.yVal, false, null);
+      updateHudAt(coords.xVal, coords.yVal);
+    } else {
+      const nearest = findNearestDatasetPoint(xPixel, yPixel);
+      if (nearest) {
+        canvas.style.cursor = 'pointer';
+        const spName = SPECIES_NAMES[nearest.row[4]] || 'setosa';
+        canvas.title = `Nhấp để nạp toàn bộ 4 thông số mẫu Iris ${spName} #${nearest.idx + 1}`;
+      } else {
+        canvas.style.cursor = 'crosshair';
+        canvas.title = 'Nhấp vào bất kỳ vị trí nào trên bảng để xem loài hoa tại vị trí đó';
+      }
+      updateHudAt(coords.xVal, coords.yVal);
+    }
+  });
+
+  const handlePointerEnd = (e) => {
+    if (isDraggingPoint) {
+      isDraggingPoint = false;
+      canvas.style.cursor = 'crosshair';
+      try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+      const { xPixel, yPixel } = getCanvasCoords(e);
+      const coords = dataCoordsFromPixel(xPixel, yPixel);
+      if (coords && coords.xVal != null && coords.yVal != null) {
+        applyPointToModel(coords.xVal, coords.yVal, true, null);
+      }
+    }
+  };
+
+  canvas.addEventListener('pointerup', handlePointerEnd);
+  canvas.addEventListener('pointercancel', handlePointerEnd);
+
+  // Hiển thị ngay thẻ kết quả ban đầu dưới bảng vẽ
+  const initX = getFeatureValue(activeFeatX);
+  const initY = getFeatureValue(activeFeatY);
+  const initSpIdx = getSpeciesAtCoord(initX, initY);
+  const initSpKey = SPECIES_NAMES[initSpIdx] || 'setosa';
+  renderInteractiveClickResult(initX, initY, initSpKey, initSpIdx, null);
+}
+
 function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, kernel, C, gamma, degree, accuracy) {
   const ctx = document.getElementById('decisionChart');
   if (!ctx) return;
 
-  const setosaPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 0).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Setosa', species: 'Setosa' }));
-  const versiPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 1).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Versicolor', species: 'Versicolor' }));
-  const virgiPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 2).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Virginica', species: 'Virginica' }));
+  const setosaPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 0).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Setosa' }));
+  const versiPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 1).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Versicolor' }));
+  const virgiPoints = ACTIVE_IRIS_DATASET.filter(d => d[4] === 2).map(d => ({ x: d[fX], y: d[fY], name: 'Iris Virginica' }));
 
-  // Support Vectors thực tế từ model 4D chiếu xuống 2D
   const svPoints = multiSVM.svIndices.map(idx => {
     const row = ACTIVE_IRIS_DATASET[idx % ACTIVE_IRIS_DATASET.length];
-    return {
-      x: row[fX],
-      y: row[fY],
-      name: `Support Vector (Mẫu #${idx + 1})`,
-      species: SPECIES_NAMES[row[4]]
-    };
+    return { x: row[fX], y: row[fY], name: `Support Vector #${idx + 1}` };
   });
 
   const currentX = getFeatureValue(fX);
   const currentY = getFeatureValue(fY);
 
-  // Custom Chart.js Plugin để vẽ Background Decision Regions dạng Lưới Ô Vuông (Mesh Grid)
   const decisionBoundaryPlugin = {
     id: 'decisionBoundaryRenderer',
     beforeDatasetsDraw(chart) {
-      const { ctx, chartArea, scales: { x: xScale, y: yScale } } = chart;
+      const { ctx: c, chartArea, scales: { x: xScale, y: yScale } } = chart;
       if (!chartArea || !xScale || !yScale || !cachedMeshGrid) return;
 
       const { gridData, xMin, xMax, yMin, yMax, resX, resY } = cachedMeshGrid;
       const stepX = (xMax - xMin) / resX;
       const stepY = (yMax - yMin) / resY;
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
-      ctx.clip();
+      c.save();
+      c.beginPath();
+      c.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+      c.clip();
 
-      // A. VÙNG PHÂN LOẠI DẠNG LƯỚI Ô VUÔNG (BACKGROUND MESH GRID REGIONS)
+      // Màu nền các phân vùng SVM: Versicolor là Vàng hổ phách amber!
       const regionColors = [
-        'rgba(22, 163, 74, 0.16)',   // Setosa (Xanh lá tươi sáng)
-        'rgba(217, 119, 6, 0.16)',   // Versicolor (Vàng hổ phách ấm áp)
-        'rgba(147, 51, 234, 0.16)'   // Virginica (Tím mộng mơ quyến rũ)
+        'rgba(74, 222, 128, 0.16)', // Setosa
+        'rgba(245, 158, 11, 0.22)', // Versicolor (Vàng hổ phách)
+        'rgba(192, 132, 252, 0.16)' // Virginica
       ];
 
       for (let i = 0; i < resX; i++) {
@@ -959,59 +1197,40 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
           const pHeight = Math.ceil(Math.abs(py1 - py2)) + 1;
 
           const cIdx = gridData[i][j];
-          ctx.fillStyle = regionColors[cIdx] || 'transparent';
-          ctx.fillRect(pLeft, pTop, pWidth, pHeight);
+          c.fillStyle = regionColors[cIdx] || 'transparent';
+          c.fillRect(pLeft, pTop, pWidth, pHeight);
         }
       }
 
-      // B. ĐƯỜNG RANH GIỚI QUYẾT ĐỊNH ZÍC ZẮC THEO LƯỚI (DECISION BOUNDARY CONTOURS)
-      ctx.lineWidth = 2.5;
-      ctx.setLineDash([6, 4]);
+      c.restore();
+    },
+    afterDatasetsDraw(chart) {
+      // Vòng radar phát sáng quanh điểm mẫu đang chọn
+      const { ctx: c, scales: { x: xScale, y: yScale } } = chart;
+      if (!xScale || !yScale) return;
+      const curX = getFeatureValue(activeFeatX);
+      const curY = getFeatureValue(activeFeatY);
+      const px = xScale.getPixelForValue(curX);
+      const py = yScale.getPixelForValue(curY);
 
-      for (let i = 0; i < resX; i++) {
-        const x1 = xMin + i * stepX;
-        const x2 = xMin + (i + 1) * stepX;
-        const px2 = xScale.getPixelForValue(x2);
+      c.save();
+      c.beginPath();
+      c.arc(px, py, 14, 0, Math.PI * 2);
+      c.strokeStyle = 'rgba(232, 112, 42, 0.6)';
+      c.lineWidth = 2;
+      c.setLineDash([3, 3]);
+      c.stroke();
 
-        for (let j = 0; j < resY; j++) {
-          const y1 = yMin + j * stepY;
-          const y2 = yMin + (j + 1) * stepY;
-          const py1 = yScale.getPixelForValue(y1);
-          const py2 = yScale.getPixelForValue(y2);
-
-          const cCurrent = gridData[i][j];
-
-          // Ranh giới dọc giữa 2 ô ngang
-          if (i + 1 < resX) {
-            const cRight = gridData[i + 1][j];
-            if (cCurrent !== cRight) {
-              ctx.strokeStyle = (cCurrent === 0 || cRight === 0) ? '#059669' : '#4f46e5';
-              ctx.beginPath();
-              ctx.moveTo(px2, py1);
-              ctx.lineTo(px2, py2);
-              ctx.stroke();
-            }
-          }
-
-          // Ranh giới ngang giữa 2 ô dọc
-          if (j + 1 < resY) {
-            const cTop = gridData[i][j + 1];
-            if (cCurrent !== cTop) {
-              ctx.strokeStyle = (cCurrent === 0 || cTop === 0) ? '#059669' : '#4f46e5';
-              ctx.beginPath();
-              ctx.moveTo(xScale.getPixelForValue(x1), py2);
-              ctx.lineTo(px2, py2);
-              ctx.stroke();
-            }
-          }
-        }
-      }
-
-      ctx.restore();
+      c.beginPath();
+      c.arc(px, py, 20, 0, Math.PI * 2);
+      c.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      c.lineWidth = 1.5;
+      c.setLineDash([]);
+      c.stroke();
+      c.restore();
     }
   };
 
-  // Tái sử dụng chart instance để animate cập nhật mượt mà, không bị giật/chớp canvas
   if (decisionChartInstance) {
     decisionChartInstance.options.scales.x.min = cachedMeshGrid ? cachedMeshGrid.xMin : undefined;
     decisionChartInstance.options.scales.x.max = cachedMeshGrid ? cachedMeshGrid.xMax : undefined;
@@ -1022,19 +1241,13 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
     decisionChartInstance.options.scales.y.title.text = `${featYName} (cm)`;
 
     decisionChartInstance.data.datasets[0].data = setosaPoints;
-    decisionChartInstance.data.datasets[0].label = `🌿 Setosa (${setosaPoints.length})`;
     decisionChartInstance.data.datasets[1].data = versiPoints;
-    decisionChartInstance.data.datasets[1].label = `🌼 Versicolor (${versiPoints.length})`;
     decisionChartInstance.data.datasets[2].data = virgiPoints;
-    decisionChartInstance.data.datasets[2].label = `🌸 Virginica (${virgiPoints.length})`;
     decisionChartInstance.data.datasets[3].data = svPoints;
-    decisionChartInstance.data.datasets[3].label = `⭐ Support Vectors (${svPoints.length})`;
-    decisionChartInstance.data.datasets[4].data = [{ x: currentX, y: currentY, name: 'Điểm đang kiểm tra' }];
+    decisionChartInstance.data.datasets[4].data = [{ x: currentX, y: currentY }];
 
-    decisionChartInstance.update({
-      duration: 400,
-      easing: 'easeOutQuart'
-    });
+    decisionChartInstance.update();
+    setupDecisionChartInteractivity();
     return;
   }
 
@@ -1044,187 +1257,120 @@ function renderDecisionBoundaryChart(multiSVM, fX, fY, featXName, featYName, ker
     data: {
       datasets: [
         {
-          label: `🌿 Setosa (${setosaPoints.length})`,
+          label: 'Setosa',
           data: setosaPoints,
-          backgroundColor: '#16a34a',
-          borderWidth: 0,
-          pointRadius: 6,
-          pointHoverRadius: 8.5
+          backgroundColor: '#4ade80',
+          borderColor: '#22c55e',
+          borderWidth: 1,
+          pointRadius: 5.5,
+          pointHoverRadius: 8,
         },
         {
-          label: `🌼 Versicolor (${versiPoints.length})`,
+          label: 'Versicolor (Vàng hổ phách)',
           data: versiPoints,
-          backgroundColor: '#d97706',
-          borderWidth: 0,
-          pointRadius: 6,
-          pointHoverRadius: 8.5
+          backgroundColor: '#f59e0b', // Vàng hổ phách amber!
+          borderColor: '#d97706',
+          borderWidth: 1,
+          pointRadius: 5.5,
+          pointHoverRadius: 8,
         },
         {
-          label: `🌸 Virginica (${virgiPoints.length})`,
+          label: 'Virginica',
           data: virgiPoints,
-          backgroundColor: '#9333ea',
-          borderWidth: 0,
-          pointRadius: 6,
-          pointHoverRadius: 8.5
+          backgroundColor: '#c084fc',
+          borderColor: '#a855f7',
+          borderWidth: 1,
+          pointRadius: 5.5,
+          pointHoverRadius: 8,
         },
         {
-          label: `⭐ Support Vectors (${svPoints.length})`,
+          label: 'Support Vectors',
           data: svPoints,
-          backgroundColor: 'rgba(239, 68, 68, 0.18)',
-          borderColor: '#e11d48',
-          borderWidth: 2,
-          pointRadius: 9.5,
-          pointStyle: 'circle',
-          pointHoverRadius: 11.5
+          backgroundColor: 'transparent',
+          borderColor: '#f87171',
+          borderWidth: 1.5,
+          pointRadius: 8.5,
         },
         {
-          label: '🔴 Điểm nhận diện',
-          data: [{ x: currentX, y: currentY, name: 'Điểm đang kiểm tra' }],
+          label: '🔴 Mẫu đang chọn (Kéo/Click)',
+          data: [{ x: currentX, y: currentY }],
           backgroundColor: '#ef4444',
-          borderWidth: 0,
-          pointRadius: 10.5,
-          pointHoverRadius: 13
+          borderColor: '#ffffff',
+          borderWidth: 2.5,
+          pointRadius: 9.5,
+          pointHoverRadius: 12,
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: {
-        duration: 400,
-        easing: 'easeOutQuart'
-      },
+      animation: false,
       scales: {
         x: {
-          title: { display: true, text: `${featXName} (cm)`, font: { size: 13, weight: '700' }, color: '#1e1b4b' },
-          grid: { color: 'rgba(226, 232, 240, 0.75)', borderDash: [3, 3] },
-          ticks: { color: '#64748b', font: { weight: '600' } },
-          min: cachedMeshGrid ? cachedMeshGrid.xMin : undefined,
-          max: cachedMeshGrid ? cachedMeshGrid.xMax : undefined
+          title: { display: true, text: `${featXName} (cm)`, color: '#f7f5f2' },
+          ticks: { color: 'rgba(247,245,242,0.65)' },
+          grid: { color: 'rgba(255,255,255,0.08)' }
         },
         y: {
-          title: { display: true, text: `${featYName} (cm)`, font: { size: 13, weight: '700' }, color: '#1e1b4b' },
-          grid: { color: 'rgba(226, 232, 240, 0.75)', borderDash: [3, 3] },
-          ticks: { color: '#64748b', font: { weight: '600' } },
-          min: cachedMeshGrid ? cachedMeshGrid.yMin : undefined,
-          max: cachedMeshGrid ? cachedMeshGrid.yMax : undefined
+          title: { display: true, text: `${featYName} (cm)`, color: '#f7f5f2' },
+          ticks: { color: 'rgba(247,245,242,0.65)' },
+          grid: { color: 'rgba(255,255,255,0.08)' }
         }
       },
       plugins: {
         legend: {
-          position: 'top',
-          labels: {
-            usePointStyle: true,
-            boxWidth: 9,
-            padding: 14,
-            font: { size: 12, weight: '600' }
-          }
+          display: false
         },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.94)',
-          titleFont: { size: 13, weight: 'bold' },
-          bodyFont: { size: 12.5 },
-          padding: 12,
-          cornerRadius: 10,
-          boxPadding: 4,
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          backgroundColor: 'rgba(16, 17, 20, 0.94)',
+          borderColor: 'rgba(255,255,255,0.18)',
           borderWidth: 1,
+          titleColor: '#ffffff',
+          bodyColor: '#f7f5f2',
           callbacks: {
             label: function(context) {
+              const ds = context.dataset;
               const p = context.raw;
-              return ` ${p.name || 'Điểm'}: ${featXName}=${context.parsed.x}cm, ${featYName}=${context.parsed.y}cm`;
+              if (ds.label.includes('Mẫu đang chọn')) {
+                return `🔴 Tọa độ chọn: (${p.x.toFixed(1)} cm, ${p.y.toFixed(1)} cm)`;
+              }
+              return `${ds.label}: (${p.x} cm, ${p.y} cm)`;
             }
           }
-        }
-      },
-      onClick: (e) => {
-        if (!decisionChartInstance) return;
-        const rect = ctx.getBoundingClientRect();
-        const clientX = (e.clientX !== undefined) ? e.clientX : (e.native ? e.native.clientX : 0);
-        const clientY = (e.clientY !== undefined) ? e.clientY : (e.native ? e.native.clientY : 0);
-        const pixelX = (e.x !== undefined) ? e.x : (clientX - rect.left);
-        const pixelY = (e.y !== undefined) ? e.y : (clientY - rect.top);
-        const xVal = decisionChartInstance.scales.x.getValueForPixel(pixelX);
-        const yVal = decisionChartInstance.scales.y.getValueForPixel(pixelY);
-        if (xVal !== undefined && yVal !== undefined && !isNaN(xVal) && !isNaN(yVal)) {
-          setFeatureValue(fX, xVal);
-          setFeatureValue(fY, yVal);
-          window.predict();
         }
       }
     }
   });
 
-  // Tương tác chuột mượt mà: Click hoặc Kéo rê chuột trên biểu đồ để đổi thông số và dự đoán ngay lập tức
-  ctx.style.cursor = 'crosshair';
-
-  const handlePointerUpdate = (evt) => {
-    if (!decisionChartInstance) return;
-    const rect = ctx.getBoundingClientRect();
-    const clientX = (evt.clientX !== undefined) ? evt.clientX : (evt.touches && evt.touches[0] ? evt.touches[0].clientX : 0);
-    const clientY = (evt.clientY !== undefined) ? evt.clientY : (evt.touches && evt.touches[0] ? evt.touches[0].clientY : 0);
-    const pixelX = clientX - rect.left;
-    const pixelY = clientY - rect.top;
-
-    const chartArea = decisionChartInstance.chartArea;
-    if (!chartArea) return;
-    if (pixelX < chartArea.left || pixelX > chartArea.right || pixelY < chartArea.top || pixelY > chartArea.bottom) {
-      return;
-    }
-
-    const xVal = decisionChartInstance.scales.x.getValueForPixel(pixelX);
-    const yVal = decisionChartInstance.scales.y.getValueForPixel(pixelY);
-
-    if (xVal !== undefined && yVal !== undefined && !isNaN(xVal) && !isNaN(yVal)) {
-      setFeatureValue(fX, xVal);
-      setFeatureValue(fY, yVal);
-      window.predict();
-    }
-  };
-
-  let isPointerDown = false;
-  ctx.onmousedown = (e) => {
-    isPointerDown = true;
-    handlePointerUpdate(e);
-  };
-
-  ctx.onmousemove = (e) => {
-    if (isPointerDown) {
-      handlePointerUpdate(e);
-    }
-  };
-
-  window.onmouseup = () => {
-    isPointerDown = false;
-  };
-
-  ctx.ontouchstart = (e) => {
-    isPointerDown = true;
-    handlePointerUpdate(e);
-  };
-
-  ctx.ontouchmove = (e) => {
-    if (isPointerDown) {
-      handlePointerUpdate(e);
-    }
-  };
-
-  window.ontouchend = () => {
-    isPointerDown = false;
-  };
+  setupDecisionChartInteractivity();
 }
 
 function updateLiveSelectionPoint() {
   const currentX = getFeatureValue(activeFeatX);
   const currentY = getFeatureValue(activeFeatY);
   if (decisionChartInstance && decisionChartInstance.data.datasets[4]) {
-    decisionChartInstance.data.datasets[4].data = [{ x: currentX, y: currentY, name: 'Điểm đang kiểm tra' }];
+    decisionChartInstance.data.datasets[4].data = [{ x: currentX, y: currentY }];
     decisionChartInstance.update('none');
+  }
+
+  const hudCoords = document.getElementById('chartHudCoords');
+  const hudSpecies = document.getElementById('chartHudSpecies');
+  if (hudCoords && hudSpecies) {
+    hudCoords.innerText = `${FEATURE_NAMES[activeFeatX]}: ${currentX.toFixed(1)} cm · ${FEATURE_NAMES[activeFeatY]}: ${currentY.toFixed(1)} cm`;
+    const cIdx = getSpeciesAtCoord(currentX, currentY);
+    if (cIdx === 0) {
+      hudSpecies.innerHTML = `<span class="text-[#4ade80] font-semibold">● Iris Setosa</span>`;
+    } else if (cIdx === 1) {
+      hudSpecies.innerHTML = `<span class="text-[#f59e0b] font-semibold">● Iris Versicolor (Vàng hổ phách)</span>`;
+    } else {
+      hudSpecies.innerHTML = `<span class="text-[#c084fc] font-semibold">● Iris Virginica</span>`;
+    }
   }
 }
 
 // =====================================================================
-// 7. TIMELINE HUẤN LUYỆN (MỤC IV)
+// 8. TIMELINE & BENCHMARK STORAGE (YÊU CẦU II.5: LƯU THEO ID TÀI KHOẢN)
 // =====================================================================
 async function addTimelineItem(item) {
   if (!item.id) {
@@ -1234,7 +1380,6 @@ async function addTimelineItem(item) {
   if (userTimeline.length > 50) userTimeline.pop();
   localStorage.setItem(`iris_user_${currentUser.id}_timeline`, JSON.stringify(userTimeline));
 
-  // Ghi vào system experiments để Admin xem & Model Benchmark tổng hợp
   const sysExp = {
     ...item,
     userName: currentUser.name || currentUser.email,
@@ -1247,7 +1392,7 @@ async function addTimelineItem(item) {
   renderTimeline();
   renderBenchmarkTable();
 
-  // Lưu trực tiếp vào Supabase (Bảng experiment_history)
+  // Lưu vào Supabase bảng experiment_history
   if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
     try {
       const payload = {
@@ -1257,7 +1402,7 @@ async function addTimelineItem(item) {
         c_param: parseFloat(item.C) || 1.0,
         gamma_param: parseFloat(item.gamma) || 0.5,
         degree: item.degree || 3,
-        features: item.features || ['Sepal L', 'Sepal W', 'Petal L', 'Petal W'],
+        features: item.features || ['Cả 4 đặc trưng'],
         feature_indices: item.inputValues || {},
         accuracy: parseFloat(item.accuracy) || 96,
         train_accuracy: parseFloat(item.accuracy) || 96,
@@ -1266,22 +1411,11 @@ async function addTimelineItem(item) {
         f1_score: parseFloat(item.f1) || 0.967,
         support_vector_count: item.svCount || 0,
         execution_time_ms: parseFloat(item.execTime) || 1.0,
-        note: `SL=${item.inputValues?.sl || 5.1}, SW=${item.inputValues?.sw || 3.5}, PL=${item.inputValues?.pl || 1.4}, PW=${item.inputValues?.pw || 0.2}`,
         created_at: new Date().toISOString()
       };
-      const { data, error } = await supabaseClient.from('experiment_history').insert(payload).select();
-
-      if (data && data[0] && data[0].id) {
-        item.id = data[0].id;
-        sysExp.id = data[0].id;
-        localStorage.setItem(`iris_user_${currentUser.id}_timeline`, JSON.stringify(userTimeline));
-        localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
-      }
-      if (error) {
-        console.warn('Lưu experiment lên Supabase thất bại:', error);
-      }
+      await supabaseClient.from('experiment_history').insert(payload);
     } catch (err) {
-      console.warn('Lỗi kết nối Supabase experiment_history:', err);
+      console.warn('Lỗi Supabase experiment_history:', err);
     }
   }
 }
@@ -1291,37 +1425,22 @@ function renderTimeline() {
   if (!container) return;
 
   if (userTimeline.length === 0) {
-    container.innerHTML = `<div style="color:#9ca3af; font-size:13px;">Chưa có quá trình huấn luyện nào. Bấm "Huấn luyện mô hình" để bắt đầu ghi nhận timeline.</div>`;
+    container.innerHTML = `<div class="text-white/50 text-xs py-4">Chưa có quá trình huấn luyện nào. Bấm "Huấn luyện & Vẽ Decision Boundary" để ghi nhận timeline.</div>`;
     return;
   }
 
   let html = '';
   userTimeline.forEach(t => {
-    const inputValStr = t.inputValues
-      ? `SL=${t.inputValues.sl}cm | SW=${t.inputValues.sw}cm | PL=${t.inputValues.pl}cm | PW=${t.inputValues.pw}cm`
-      : 'SL=5.1cm | SW=3.5cm | PL=1.4cm | PW=0.2cm';
-
     html += `
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-content">
-          <div class="timeline-header">
-            <span>🚀 Huấn luyện Kernel <b>${t.kernel.toUpperCase()}</b> (C=${t.C}, γ=${t.gamma})</span>
-            <span style="font-size:11.5px; color:#6b7280;">${t.timestamp}</span>
-          </div>
-          <div style="font-size:12px; color:#374151; margin-top:2px;">
-            <b>Đặc trưng:</b> ${Array.isArray(t.features) ? t.features.join(' × ') : '4 đặc trưng'} · <b>Thời gian:</b> ${t.execTime} ms
-          </div>
-          <div style="font-size:11.5px; color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:6px; margin-top:4px; display:inline-block;">
-            📥 <b>Số liệu đặc trưng đã nhập:</b> ${inputValStr}
-          </div>
-          <div class="timeline-metrics" style="margin-top:6px;">
-            <span style="color:#059669; font-weight:bold;">🎯 Accuracy: ${t.accuracy || 96}%</span>
-            <span>Precision: ${t.precision}</span>
-            <span>Recall: ${t.recall}</span>
-            <span>F1: ${t.f1}</span>
-            <span style="color:#4f46e5; font-weight:bold;">⭐ SVs: ${t.svCount}</span>
-          </div>
+      <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-4 text-xs">
+        <div>
+          <div class="font-semibold text-white">🚀 Kernel <span class="text-[#f2c14e]">${t.kernel.toUpperCase()}</span> (C=${t.C}, γ=${t.gamma})</div>
+          <div class="text-white/60 text-[11px] mt-0.5">Features: ${Array.isArray(t.features) ? t.features.join(', ') : '4 đặc trưng'} · ${t.timestamp}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-emerald-400 font-mono font-bold">${t.accuracy}% Acc</span>
+          <span class="text-purple-300 font-mono">${t.svCount} SVs</span>
+          <span class="text-white/50 font-mono">${t.execTime} ms</span>
         </div>
       </div>
     `;
@@ -1329,439 +1448,21 @@ function renderTimeline() {
   container.innerHTML = html;
 }
 
-window.clearTimeline = async function() {
+window.clearTimeline = function() {
   userTimeline = [];
   localStorage.removeItem(`iris_user_${currentUser.id}_timeline`);
   renderTimeline();
 };
 
-window.deleteBenchmarkItem = async function(id) {
-  userTimeline = userTimeline.filter(x => x.id !== id);
-  allSystemExperiments = allSystemExperiments.filter(x => x.id !== id);
-  localStorage.setItem(`iris_user_${currentUser.id}_timeline`, JSON.stringify(userTimeline));
-  localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
-
-  if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
-    try {
-      await supabaseClient.from('experiment_history').delete().eq('id', id);
-    } catch (e) {
-      console.warn('Lỗi xóa experiment từ Supabase:', e);
-    }
-  }
-
-  renderBenchmarkTable();
-  renderTimeline();
-};
-
-window.clearAllBenchmarks = async function() {
-  if (!confirm('Bạn có chắc muốn xóa toàn bộ kết quả Benchmark?')) return;
-  userTimeline = [];
-  allSystemExperiments = [];
-  localStorage.removeItem(`iris_user_${currentUser.id}_timeline`);
-  localStorage.removeItem('iris_system_experiments');
-
-  if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
-    try {
-      if (currentUser.role === 'ADMIN') {
-        await supabaseClient.from('experiment_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      } else {
-        const validUid = toValidUUID(currentUser.id);
-        if (validUid) {
-          await supabaseClient.from('experiment_history').delete().eq('user_id', validUid);
-        }
-      }
-    } catch (e) {
-      console.warn('Lỗi dọn sạch experiments trên Supabase:', e);
-    }
-  }
-
-  renderBenchmarkTable();
-  renderTimeline();
-};
-
 // =====================================================================
-// 8. THỬ THÁCH ĐOÁN HOA (THỬ THÁCH CON NGƯỜI VS AI SVM)
+// 9. MODEL BENCHMARK (YÊU CẦU II.5: LƯU & HIỂN THỊ THEO TÀI KHOẢN)
 // =====================================================================
-let guessStats = { total: 0, correct: 0, wrong: 0 };
-
-function updateGuessScoreUI() {
-  const totalEl = document.getElementById('guessTotalPlays');
-  const correctEl = document.getElementById('guessCorrectPlays');
-  const wrongEl = document.getElementById('guessWrongPlays');
-  const accEl = document.getElementById('guessAccuracy');
-
-  if (totalEl) totalEl.innerText = guessStats.total;
-  if (correctEl) correctEl.innerText = guessStats.correct;
-  if (wrongEl) wrongEl.innerText = guessStats.wrong;
-  if (accEl) {
-    const acc = guessStats.total > 0 ? ((guessStats.correct / guessStats.total) * 100).toFixed(0) : 0;
-    accEl.innerText = `${acc}%`;
-  }
-}
-
-window.resetGuessScore = function() {
-  guessStats = { total: 0, correct: 0, wrong: 0 };
-  updateGuessScoreUI();
-};
-
-window.generateRandomSample = async function() {
-  selectedGuess = null;
-  document.querySelectorAll('.guess-opt-btn').forEach(b => b.classList.remove('selected'));
-  const guessRes = document.getElementById('guessResult');
-  
-  let sampleData = null;
-
-  // 1. Gọi API FastAPI tính toán vị trí ngẫu nhiên rộng khắp bảng và độ khó cao
-  try {
-    const res = await fetch('/random-sample');
-    if (res.ok) {
-      const data = await res.json();
-      sampleData = {
-        sl: data.sepal_length,
-        sw: data.sepal_width,
-        pl: data.petal_length,
-        pw: data.petal_width,
-        trueClass: data.true_class,
-        difficulty: data.difficulty
-      };
-    }
-  } catch (err) {
-    console.warn('API /random-sample không phản hồi, dùng bộ sinh toán học client:', err);
-  }
-
-  // 2. Fallback sinh ngẫu nhiên rộng khắp toàn bộ bảng nếu API bận
-  if (!sampleData) {
-    const isBorder = Math.random() < 0.45;
-    let pl, pw, sl, sw, diffText;
-    if (isBorder) {
-      // Vùng ranh giới thách thức giữa Versicolor và Virginica
-      pl = +(4.6 + Math.random() * 0.7).toFixed(1);
-      pw = +(1.4 + Math.random() * 0.4).toFixed(1);
-      sl = +(5.7 + Math.random() * 1.0).toFixed(1);
-      sw = +(2.5 + Math.random() * 0.7).toFixed(1);
-      diffText = 'Khó 🔥 (Vùng giáp ranh Versicolor - Virginica)';
-    } else {
-      // Tọa độ tự do chạy khắp bảng
-      pl = +(1.0 + Math.random() * 5.9).toFixed(1);
-      pw = +(0.1 + Math.random() * 2.4).toFixed(1);
-      sl = +(4.3 + Math.random() * 3.6).toFixed(1);
-      sw = +(2.0 + Math.random() * 2.4).toFixed(1);
-      diffText = 'Khắp bảng 🎲 (Thách thức mở rộng)';
-    }
-
-    // Dự đoán nhãn thật bằng hàm SVM chuẩn
-    let trueSpecies = 'setosa';
-    if (pl <= 2.45) {
-      trueSpecies = 'setosa';
-    } else {
-      const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
-      trueSpecies = score >= 0 ? 'virginica' : 'versicolor';
-    }
-
-    sampleData = {
-      sl, sw, pl, pw,
-      trueClass: trueSpecies,
-      difficulty: diffText
-    };
-  }
-
-  currentGuessSample = sampleData;
-
-  if (guessRes) {
-    guessRes.className = '';
-    guessRes.innerHTML = `
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; color:#475569; font-size:13px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span>🎯</span>
-          <span><b>Đã tạo mẫu hoa mới chạy khắp bảng!</b> Hãy quan sát thông số bên trên và chọn loài hoa ở Bước 1.</span>
-        </div>
-        <span style="background:#eef2ff; color:#4338ca; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:700; border:1px solid #c7d2fe;">
-          ${currentGuessSample.difficulty || 'Thử thách độ khó cao 🔥'}
-        </span>
-      </div>
-    `;
-  }
-
-  const slEl = document.getElementById('guessSepalLength');
-  const swEl = document.getElementById('guessSepalWidth');
-  const plEl = document.getElementById('guessPetalLength');
-  const pwEl = document.getElementById('guessPetalWidth');
-
-  if (slEl) slEl.innerText = currentGuessSample.sl + ' cm';
-  if (swEl) swEl.innerText = currentGuessSample.sw + ' cm';
-  if (plEl) plEl.innerText = currentGuessSample.pl + ' cm';
-  if (pwEl) pwEl.innerText = currentGuessSample.pw + ' cm';
-
-  renderGuessChart(currentGuessSample.pl, currentGuessSample.pw);
-};
-
-window.selectGuess = function(flower, btn) {
-  selectedGuess = flower;
-  document.querySelectorAll('.guess-opt-btn').forEach(b => b.classList.remove('selected'));
-  if (btn) btn.classList.add('selected');
-};
-
-function renderGuessChart(userPL, userPW) {
-  const ctx = document.getElementById('guessChart');
-  if (!ctx) return;
-
-  // 1. Nếu biểu đồ đã tồn tại, chỉ cập nhật vị trí con trỏ đỏ để tạo hiệu ứng lướt mượt mà trên bản đồ
-  if (guessChartInstance && guessChartInstance.data && guessChartInstance.data.datasets[3]) {
-    guessChartInstance.data.datasets[3].data = [{ x: userPL, y: userPW }];
-    guessChartInstance.update();
-    return;
-  }
-
-  // 2. Giảm bớt số mẫu hiển thị (giữ khoảng 11 mẫu mỗi loài) giúp biểu đồ thông thoáng, dễ nhìn hơn
-  const setosaData = ACTIVE_IRIS_DATASET.filter(d => d[4] === 0).filter((_, i) => i % 3 !== 1).map(d => ({ x: d[2], y: d[3] }));
-  const versicolorData = ACTIVE_IRIS_DATASET.filter(d => d[4] === 1).filter((_, i) => i % 3 !== 1).map(d => ({ x: d[2], y: d[3] }));
-  const virginicaData = ACTIVE_IRIS_DATASET.filter(d => d[4] === 2).filter((_, i) => i % 3 !== 1).map(d => ({ x: d[2], y: d[3] }));
-
-  // Plugin đơn giản: đổ bóng nhẹ cho con trỏ đỏ giúp tách biệt nổi bật
-  const simpleTargetGlowPlugin = {
-    id: 'simpleTargetGlow',
-    beforeDatasetDraw(chart, args) {
-      if (args.index === 3) {
-        chart.ctx.save();
-        chart.ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-        chart.ctx.shadowBlur = 6;
-        chart.ctx.shadowOffsetY = 2;
-      }
-    },
-    afterDatasetDraw(chart, args) {
-      if (args.index === 3) {
-        chart.ctx.restore();
-      }
-    }
-  };
-
-  guessChartInstance = new Chart(ctx, {
-    type: 'scatter',
-    plugins: [simpleTargetGlowPlugin],
-    data: {
-      datasets: [
-        { 
-          label: 'Iris Setosa (Xanh lá)', 
-          data: setosaData, 
-          backgroundColor: '#16a34a', 
-          borderColor: '#15803d',
-          // Giảm kích thước xuống nhỏ hơn 2/3 hiện tại (từ 5.5px xuống 3px)
-          pointRadius: 3,
-          pointHoverRadius: 4.5
-        },
-        { 
-          label: 'Iris Versicolor (Vàng hổ phách)', 
-          data: versicolorData, 
-          backgroundColor: '#d97706', 
-          borderColor: '#b45309',
-          // Giảm kích thước xuống nhỏ hơn 2/3 hiện tại (từ 5.5px xuống 3px)
-          pointRadius: 3,
-          pointHoverRadius: 4.5
-        },
-        { 
-          label: 'Iris Virginica (Tím mộng mơ)', 
-          data: virginicaData, 
-          backgroundColor: '#9333ea', 
-          borderColor: '#7e22ce',
-          // Giảm kích thước xuống nhỏ hơn 2/3 hiện tại (từ 5.5px xuống 3px)
-          pointRadius: 3,
-          pointHoverRadius: 4.5
-        },
-        { 
-          label: '📍 Mẫu ngẫu nhiên (Cần đoán)', 
-          data: [{ x: userPL, y: userPW }], 
-          backgroundColor: '#ef4444', 
-          borderColor: '#ffffff', 
-          borderWidth: 3, 
-          pointRadius: 10,
-          pointHoverRadius: 13
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      // Animation mượt mà giúp con trỏ lướt từ từ đến vị trí mới
-      animation: {
-        duration: 700,
-        easing: 'easeInOutCubic'
-      },
-      scales: {
-        x: { 
-          min: 0, 
-          max: 7.5, 
-          ticks: {
-            stepSize: 1,
-            color: '#64748b',
-            font: { size: 11 }
-          },
-          title: { 
-            display: true, 
-            text: 'Petal Length (cm)', 
-            font: { size: 11.5, weight: 'bold' }, 
-            color: '#334155',
-            padding: { top: 6 }
-          },
-          grid: { color: 'rgba(226, 232, 240, 0.7)' }
-        },
-        y: { 
-          min: 0, 
-          max: 3.0, 
-          ticks: {
-            stepSize: 0.5,
-            color: '#64748b',
-            font: { size: 11 }
-          },
-          title: { 
-            display: true, 
-            text: 'Petal Width (cm)', 
-            font: { size: 11.5, weight: 'bold' }, 
-            color: '#334155',
-            padding: { bottom: 6 }
-          },
-          grid: { color: 'rgba(226, 232, 240, 0.7)' }
-        }
-      },
-      plugins: { 
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleFont: { size: 12, weight: 'bold' },
-          bodyFont: { size: 11.5 },
-          padding: 10,
-          cornerRadius: 8,
-          callbacks: {
-            label: function(context) {
-              return `${context.dataset.label}: (${context.parsed.x} cm, ${context.parsed.y} cm)`;
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-window.checkGuess = async function() {
-  if (!selectedGuess) {
-    alert('Vui lòng chọn 1 loài hoa ở Bước 1 trước khi kiểm tra!');
-    return;
-  }
-  const s = currentGuessSample;
-
-  // Lấy kết quả từ Python FastAPI (sklearn SVM chính xác)
-  const svmPred = await callPredictAPI(s.sl, s.sw, s.pl, s.pw);
-  const trueSpecies = (s.trueClass || svmPred).toLowerCase();
-  const choice = selectedGuess.toLowerCase();
-
-  // Đúng nếu đoán trúng loài hoa thực địa hoặc khớp với AI SVM
-  const isCorrect = (choice === trueSpecies) || (choice === svmPred.toLowerCase());
-
-  guessStats.total++;
-  if (isCorrect) {
-    guessStats.correct++;
-  } else {
-    guessStats.wrong++;
-  }
-  updateGuessScoreUI();
-
-  const formattedChoice = choice.charAt(0).toUpperCase() + choice.slice(1);
-  const formattedTrue = trueSpecies.charAt(0).toUpperCase() + trueSpecies.slice(1);
-  const formattedPred = svmPred.charAt(0).toUpperCase() + svmPred.slice(1);
-
-  const resDiv = document.getElementById('guessResult');
-  resDiv.className = isCorrect ? 'result-correct' : 'result-wrong';
-  resDiv.innerHTML = `
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-      <div style="flex:1;">
-        <div style="font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <span>${isCorrect ? '🎉 CHÍNH XÁC XUẤT SẮC!' : '⚠️ CHƯA CHÍNH XÁC!'}</span>
-        </div>
-        <div style="font-size:13.5px; line-height:1.7;">
-          • Lựa chọn của bạn: <b style="text-decoration: underline;">Iris ${formattedChoice}</b><br>
-          • Loài hoa thực tế: <b style="color:#0284c7;">Iris ${formattedTrue}</b><br>
-          • AI (SVM Linear) nhận diện: <b style="color:${isCorrect ? '#065f46' : '#991b1b'};">Iris ${formattedPred}</b>
-        </div>
-        <div style="font-size:12.5px; margin-top:8px; padding-top:8px; border-top:1px dashed ${isCorrect ? '#86efac' : '#fca5a5'}; opacity:0.95;">
-          💡 <b>Giải thích:</b> Với Petal Length = <b>${s.pl} cm</b> và Petal Width = <b>${s.pw} cm</b>, mẫu hoa mang đầy đủ đặc trưng hình thái của loài <b>Iris ${formattedTrue}</b> và được mô hình SVM phân loại vào miền <b>Iris ${formattedPred}</b>.
-        </div>
-      </div>
-      <div style="text-align:center; background:#ffffff; padding:10px 16px; border-radius:12px; border:1px solid ${isCorrect ? '#a7f3d0' : '#fecaca'}; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-        <div style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Kết quả phân loại</div>
-        <div style="font-size:18px; font-weight:800; color:${isCorrect ? '#059669' : '#dc2626'}; margin-top:2px;">
-          ${isCorrect ? '✅ Trùng khớp 100%' : '❌ Khác biệt'}
-        </div>
-      </div>
-    </div>
-  `;
-
-  saveUserPrediction(s.sl, s.sw, s.pl, s.pw, svmPred, 'Đoán thử thách');
-};
-
-// =====================================================================
-// 9. MODEL BENCHMARK (MỤC VI - SO SÁNH 5 KERNEL DUY NHẤT & 4 ĐẶC TRƯNG)
-// =====================================================================
-window.runBenchmarkAllKernels = async function() {
-  const kernels = ['linear', 'rbf', 'poly', 'sigmoid', 'precomputed'];
-  const X_all = ACTIVE_IRIS_DATASET.map(d => [d[0], d[1], d[2], d[3]]);
-  const y_all = ACTIVE_IRIS_DATASET.map(d => d[4]);
-
-  const sl = parseFloat(document.getElementById('sepal_length')?.value || document.getElementById('sepalLength')?.value) || 5.1;
-  const sw = parseFloat(document.getElementById('sepal_width')?.value || document.getElementById('sepalWidth')?.value) || 3.5;
-  const pl = parseFloat(document.getElementById('petal_length')?.value || document.getElementById('petalLength')?.value) || 1.4;
-  const pw = parseFloat(document.getElementById('petal_width')?.value || document.getElementById('petalWidth')?.value) || 0.2;
-
-  for (const k of kernels) {
-    const t0 = performance.now();
-    const model = trainMultiClassSVM(X_all, y_all, 1.0, k, 0.5, 3, 1.0);
-    const t1 = performance.now();
-
-    let correct = 0;
-    const confusion = [[0,0,0],[0,0,0],[0,0,0]];
-    X_all.forEach((x, i) => {
-      const pred = model.predictSample(x).classIndex;
-      const trueC = y_all[i];
-      confusion[trueC][pred]++;
-      if (pred === trueC) correct++;
-    });
-
-    const acc = +((correct / X_all.length) * 100).toFixed(1);
-
-    let sumP = 0, sumR = 0;
-    for (let c = 0; c < 3; c++) {
-      const tp = confusion[c][c];
-      const totalPred = confusion[0][c] + confusion[1][c] + confusion[2][c];
-      const totalActual = confusion[c][0] + confusion[c][1] + confusion[c][2];
-      sumP += totalPred > 0 ? (tp / totalPred) : 1.0;
-      sumR += totalActual > 0 ? (tp / totalActual) : 1.0;
-    }
-    const precision = +(sumP / 3).toFixed(3);
-    const recall = +(sumR / 3).toFixed(3);
-    const f1 = +((2 * precision * recall) / (precision + recall || 1)).toFixed(3);
-
-    await addTimelineItem({
-      kernel: k,
-      C: 1.0,
-      gamma: 0.5,
-      features: ['Sepal L', 'Sepal W', 'Petal L', 'Petal W'],
-      inputValues: { sl, sw, pl, pw },
-      accuracy: acc,
-      precision: precision.toFixed(3),
-      recall: recall.toFixed(3),
-      f1: f1.toFixed(3),
-      svCount: model.svIndices.length,
-      execTime: +(Math.max(0.8, t1 - t0)).toFixed(2),
-      timestamp: new Date().toLocaleTimeString('vi-VN')
-    });
-  }
-
-  renderBenchmarkTable();
-};
-
 function renderBenchmarkTable() {
   const tbody = document.getElementById('benchmarkTableBody');
   if (!tbody) return;
 
-  const datasetToUse = userTimeline.length > 0 ? userTimeline : allSystemExperiments;
+  // Non-admins see ONLY their own timeline history; admins can see all system experiments
+  const datasetToUse = currentUser.role === 'ADMIN' ? allSystemExperiments : userTimeline;
 
   const totalRunsEl = document.getElementById('bmTotalRuns');
   const topKernelEl = document.getElementById('bmTopKernel');
@@ -1774,7 +1475,7 @@ function renderBenchmarkTable() {
     if (bestAccEl) bestAccEl.innerText = '-';
     if (avgLatEl) avgLatEl.innerText = '-';
 
-    tbody.innerHTML = `<tr><td colspan="8" style="padding:28px; color:#64748b; text-align:center; font-size:13px;">Chưa có dữ liệu Benchmark. Hãy huấn luyện mô hình từ trang Nhận diện để ghi nhận kết quả vào bảng!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-white/50 text-xs">Chưa có dữ liệu Benchmark của tài khoản này. Bấm "Huấn luyện & Vẽ Decision Boundary" để ghi nhận!</td></tr>`;
     if (benchmarkChartInstance) {
       benchmarkChartInstance.destroy();
       benchmarkChartInstance = null;
@@ -1782,7 +1483,6 @@ function renderBenchmarkTable() {
     return;
   }
 
-  // Cập nhật 4 KPI summary cards
   const totalRuns = datasetToUse.length;
   const kernelCounts = {};
   let maxAcc = 0;
@@ -1812,52 +1512,36 @@ function renderBenchmarkTable() {
 
   let html = '';
   datasetToUse.forEach(r => {
-    const sl = r.inputValues?.sl !== undefined ? r.inputValues.sl : 5.1;
-    const sw = r.inputValues?.sw !== undefined ? r.inputValues.sw : 3.5;
-    const pl = r.inputValues?.pl !== undefined ? r.inputValues.pl : 1.4;
-    const pw = r.inputValues?.pw !== undefined ? r.inputValues.pw : 0.2;
-
+    const sl = r.inputValues?.sl ?? 5.1;
+    const sw = r.inputValues?.sw ?? 3.5;
+    const pl = r.inputValues?.pl ?? 1.4;
+    const pw = r.inputValues?.pw ?? 0.2;
     const kernelName = (r.kernel || 'linear').toUpperCase();
+    const isHighest = parseFloat(r.accuracy) === maxAcc && maxAcc > 0;
 
     html += `
-      <tr style="border-bottom:1px solid #f1f5f9; transition: background 0.15s ease;">
-        <td style="text-align:left; padding:10px 14px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span class="tag-kernel" style="font-weight:700; font-size:11px;">${kernelName}</span>
-            <span style="font-size:11px; color:#64748b; font-family:monospace;">C=${r.C || 1}${r.gamma ? ` · γ=${r.gamma}` : ''}</span>
+      <tr class="hover:bg-white/[0.04] transition-colors border-l-2 ${kernelName === 'RBF' ? 'border-l-[#e8702a]' : 'border-l-transparent'}">
+        <td class="py-3 px-4">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-white">${kernelName}</span>
+            <span class="text-white/60 text-[11px]">C=${r.C || 1}</span>
           </div>
         </td>
-        <td style="text-align:left; padding:10px 12px;">
-          <div style="display:inline-flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; font-family:monospace;">
-            <span>SL:<b>${sl}</b></span>
-            <span style="color:#cbd5e1;">|</span>
-            <span>SW:<b>${sw}</b></span>
-            <span style="color:#cbd5e1;">|</span>
-            <span>PL:<b>${pl}</b></span>
-            <span style="color:#cbd5e1;">|</span>
-            <span>PW:<b>${pw}</b></span>
-          </div>
+        <td class="py-3 px-4 font-mono text-[11px] text-white/70">
+          SL:${sl} SW:${sw} PL:${pl} PW:${pw}
         </td>
-        <td style="padding:10px; text-align:center; font-size:12px; color:#334155; font-weight:600;">
-          ${r.precision !== undefined ? r.precision : '0.967'}
-        </td>
-        <td style="padding:10px; text-align:center;">
-          <span style="display:inline-block; background:#ecfdf5; color:#065f46; font-weight:800; font-size:12px; padding:2px 8px; border-radius:6px; border:1px solid #a7f3d0;">
-            ${r.accuracy !== undefined ? r.accuracy : 96}%
+        <td class="py-3 px-3 text-center text-white/80">${r.precision ?? '0.967'}</td>
+        <td class="py-3 px-3 text-center">
+          <span class="inline-flex items-center gap-1 font-bold ${isHighest ? 'text-[#f2c14e]' : 'text-emerald-400'}">
+            ${r.accuracy}% ${isHighest ? '<span class="text-[9px] px-1.5 py-0.2 rounded-full bg-[#f2c14e]/20 border border-[#f2c14e]/40">Cao nhất</span>' : ''}
           </span>
         </td>
-        <td style="padding:10px; text-align:center; font-size:12px; color:#334155;">
-          ${r.f1 !== undefined ? r.f1 : '0.967'}
-        </td>
-        <td style="padding:10px; text-align:center; font-size:12px; color:#4f46e5; font-weight:600;">
-          ${r.recall !== undefined ? r.recall : '0.967'}
-        </td>
-        <td style="padding:10px; text-align:center; font-size:12px; color:#059669; font-weight:600;">
-          ${r.execTime !== undefined ? r.execTime + ' ms' : '-'}
-        </td>
-        <td style="padding:10px; text-align:center;">
-          <button class="action-btn" style="color:#e11d48; background:#fff1f2; border:1px solid #fecdd3; padding:4px 9px; border-radius:6px; font-size:11.5px; font-weight:600; cursor:pointer;" onclick="deleteBenchmarkItem('${r.id}')" title="Xóa kết quả huấn luyện này">
-            🗑️ Xóa
+        <td class="py-3 px-3 text-center text-white/80">${r.f1 ?? '0.967'}</td>
+        <td class="py-3 px-3 text-center text-white/80">${r.recall ?? '0.967'}</td>
+        <td class="py-3 px-3 text-center text-white/70">${r.execTime ?? 1} ms</td>
+        <td class="py-3 px-3 text-center">
+          <button type="button" class="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded-full hover:bg-red-500/10" onclick="deleteBenchmarkItem('${r.id}')">
+            Xóa
           </button>
         </td>
       </tr>
@@ -1884,49 +1568,54 @@ function renderBenchmarkChart(rows) {
     data: {
       labels: labels,
       datasets: [
-        { label: 'Accuracy (%)', data: accData, backgroundColor: 'rgba(5, 150, 105, 0.85)', borderRadius: 4, yAxisID: 'y' },
-        { label: 'Thời gian (ms)', data: timeData, backgroundColor: 'rgba(99, 102, 241, 0.85)', borderRadius: 4, yAxisID: 'y1' }
+        { label: 'Accuracy (%)', data: accData, backgroundColor: 'rgba(74, 222, 128, 0.8)', borderRadius: 6, yAxisID: 'y' },
+        { label: 'Thời gian (ms)', data: timeData, backgroundColor: 'rgba(232, 112, 42, 0.8)', borderRadius: 6, yAxisID: 'y1' }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              const unit = context.datasetIndex === 0 ? '%' : ' ms';
-              return `${context.dataset.label}: ${context.raw}${unit}`;
-            }
-          }
-        }
-      },
       scales: {
-        x: {
-          ticks: { font: { size: 10 } }
-        },
-        y: {
-          min: 0,
-          max: 100,
-          title: { display: true, text: 'Accuracy (%)' }
-        },
-        y1: {
-          position: 'right',
-          min: 0,
-          title: { display: true, text: 'Thời gian (ms)' },
-          grid: { drawOnChartArea: false }
-        }
+        x: { ticks: { color: 'rgba(247,245,242,0.65)' }, grid: { display: false } },
+        y: { min: 0, max: 100, ticks: { color: 'rgba(247,245,242,0.65)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+        y1: { position: 'right', grid: { display: false }, ticks: { color: 'rgba(247,245,242,0.65)' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#f7f5f2', boxWidth: 10 } }
       }
     }
   });
 }
 
+window.deleteBenchmarkItem = async function(id) {
+  userTimeline = userTimeline.filter(x => x.id !== id);
+  allSystemExperiments = allSystemExperiments.filter(x => x.id !== id);
+  localStorage.setItem(`iris_user_${currentUser.id}_timeline`, JSON.stringify(userTimeline));
+  localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
+
+  if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
+    try {
+      await supabaseClient.from('experiment_history').delete().eq('id', id);
+    } catch (e) {}
+  }
+  renderBenchmarkTable();
+};
+
+window.clearAllBenchmarks = async function() {
+  if (confirm('Bạn có chắc muốn xóa toàn bộ benchmark của bạn?')) {
+    userTimeline = [];
+    localStorage.removeItem(`iris_user_${currentUser.id}_timeline`);
+    if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
+      try {
+        await supabaseClient.from('experiment_history').delete().eq('user_id', currentUser.id);
+      } catch (e) {}
+    }
+    renderBenchmarkTable();
+  }
+};
+
 // =====================================================================
-// 10. FILE ANALYSIS & HISTORY
+// 10. PREDICTION HISTORY (YÊU CẦU II.5: LƯU & HIỂN THỊ THEO TÀI KHOẢN)
 // =====================================================================
 async function saveUserPrediction(sl, sw, pl, pw, prediction, method) {
   const item = {
@@ -1941,7 +1630,6 @@ async function saveUserPrediction(sl, sw, pl, pw, prediction, method) {
   localStorage.setItem(`iris_user_${currentUser.id}_history`, JSON.stringify(userHistory));
   renderHistoryTable();
 
-  // Lưu vào Supabase bảng prediction_history
   if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
     try {
       const payload = {
@@ -1955,18 +1643,8 @@ async function saveUserPrediction(sl, sw, pl, pw, prediction, method) {
         method: method || 'Nhập số liệu',
         created_at: new Date().toISOString()
       };
-      const { data, error } = await supabaseClient.from('prediction_history').insert(payload).select();
-
-      if (data && data[0] && data[0].id) {
-        item.id = data[0].id;
-        localStorage.setItem(`iris_user_${currentUser.id}_history`, JSON.stringify(userHistory));
-      }
-      if (error) {
-        console.warn('Lưu prediction lên Supabase thất bại:', error);
-      }
-    } catch (err) {
-      console.warn('Lỗi kết nối Supabase prediction_history:', err);
-    }
+      await supabaseClient.from('prediction_history').insert(payload);
+    } catch (err) {}
   }
 }
 
@@ -1975,19 +1653,26 @@ function renderHistoryTable() {
   if (!tbody) return;
 
   if (userHistory.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; color:#6b7280;">Chưa có lịch sử nhận diện nào của tài khoản này.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-white/50 text-xs">Chưa có lịch sử nhận diện nào của tài khoản này.</td></tr>`;
     return;
   }
 
   let html = '';
   userHistory.forEach(h => {
+    const col = SPECIES_COLORS[h.prediction] || '#4ade80';
     html += `
-      <tr>
-        <td style="font-size:12px; color:#6b7280;">${h.timestamp}</td>
-        <td style="font-weight:600;">${h.sl} / ${h.sw} / ${h.pl} / ${h.pw}</td>
-        <td><span style="font-size:12px; color:#4f46e5;">${h.method}</span></td>
-        <td><span class="tag-kernel" style="background:#dcfce7; color:#166534;">Iris ${h.prediction.toUpperCase()}</span></td>
-        <td><button class="action-btn" style="color:#dc2626;" onclick="deleteHistoryItem('${h.id}')">Xóa</button></td>
+      <tr class="hover:bg-white/[0.04] transition-colors">
+        <td class="py-3 px-4 text-white/60">${h.timestamp}</td>
+        <td class="py-3 px-4 font-mono font-medium text-white">${h.sl} / ${h.sw} / ${h.pl} / ${h.pw}</td>
+        <td class="py-3 px-4 text-white/80">${h.method}</td>
+        <td class="py-3 px-4">
+          <span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full" style="background: ${col}20; color: ${col}; border: 1px solid ${col}40;">
+            Iris ${h.prediction.toUpperCase()}
+          </span>
+        </td>
+        <td class="py-3 px-4 text-center">
+          <button type="button" class="text-red-400 hover:text-red-300 text-xs" onclick="deleteHistoryItem('${h.id}')">Xóa</button>
+        </td>
       </tr>
     `;
   });
@@ -1997,213 +1682,389 @@ function renderHistoryTable() {
 window.deleteHistoryItem = async function(id) {
   userHistory = userHistory.filter(x => x.id !== id);
   localStorage.setItem(`iris_user_${currentUser.id}_history`, JSON.stringify(userHistory));
-
   if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
     try {
       await supabaseClient.from('prediction_history').delete().eq('id', id);
-    } catch (e) {
-      console.warn('Lỗi xóa prediction trên Supabase:', e);
-    }
+    } catch (e) {}
   }
-
   renderHistoryTable();
 };
 
 window.clearUserHistory = async function() {
-  if (confirm('Bạn có chắc muốn xóa lịch sử của bạn?')) {
+  if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử nhận diện?')) {
     userHistory = [];
     localStorage.removeItem(`iris_user_${currentUser.id}_history`);
-
     if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
       try {
-        if (currentUser.role === 'ADMIN') {
-          await supabaseClient.from('prediction_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        } else {
-          await supabaseClient.from('prediction_history').delete().eq('user_id', currentUser.id);
-        }
-      } catch (e) {
-        console.warn('Lỗi xóa lịch sử trên Supabase:', e);
-      }
+        await supabaseClient.from('prediction_history').delete().eq('user_id', currentUser.id);
+      } catch (e) {}
     }
-
     renderHistoryTable();
   }
 };
 
 // =====================================================================
-// 10. FILE ANALYSIS CONTROLLER (MỤC PHÂN TÍCH TẬP DỮ LIỆU)
+// 11. ĐOÁN HOA (YÊU CẦU II.2: BỎ DÒNG GIẢI THÍCH KHI ĐOÁN XONG & CHỌN ĐẶC TRƯNG)
 // =====================================================================
-let currentFileAnalysis = null;
+let guessFeatX = 2; // Mặc định Trục X: Petal Length (2)
+let guessFeatY = 3; // Mặc định Trục Y: Petal Width (3)
 
-const FLOWER_DISPLAY_NAMES = {
-  setosa: 'Iris Setosa',
-  versicolor: 'Iris Versicolor',
-  virginica: 'Iris Virginica'
+window.selectGuessFeature = function(idx) {
+  if (idx === guessFeatX) return;
+  if (idx === guessFeatY) {
+    const tmp = guessFeatX;
+    guessFeatX = guessFeatY;
+    guessFeatY = tmp;
+  } else {
+    guessFeatY = idx;
+  }
+  updateGuessFeatureCardStyles();
+  if (currentGuessSample) {
+    renderGuessChart(currentGuessSample);
+  }
 };
 
-const FLOWER_META = {
-  setosa: { name: 'Iris Setosa', image: 'images/setosa.jpg', colorClass: 'setosa' },
-  versicolor: { name: 'Iris Versicolor', image: 'images/versicolor.jpg', colorClass: 'versicolor' },
-  virginica: { name: 'Iris Virginica', image: 'images/virginica.jpg', colorClass: 'virginica' }
+window.handleGuessAxisChange = function() {
+  const selX = document.getElementById('guessAxisXSelect');
+  const selY = document.getElementById('guessAxisYSelect');
+  if (!selX || !selY) return;
+  let x = parseInt(selX.value);
+  let y = parseInt(selY.value);
+  if (x === y) {
+    y = (x + 1) % 4;
+    selY.value = y;
+  }
+  guessFeatX = x;
+  guessFeatY = y;
+  updateGuessFeatureCardStyles();
+  if (currentGuessSample) {
+    renderGuessChart(currentGuessSample);
+  }
 };
 
-function normalizeSpeciesLabel(val) {
-  if (val === undefined || val === null || val === '') return '';
-  let str = String(val).trim().toLowerCase();
-  str = str.replace(/^iris[-_\s]*/, '').replace(/^i[-_\s]*/, '').replace(/[\s_]+/g, '-');
-  if (str.includes('setosa') || str === '0') return 'setosa';
-  if (str.includes('versicolor') || str === '1') return 'versicolor';
-  if (str.includes('virginica') || str === '2') return 'virginica';
-  return '';
+function updateGuessFeatureCardStyles() {
+  const selX = document.getElementById('guessAxisXSelect');
+  const selY = document.getElementById('guessAxisYSelect');
+  if (selX) selX.value = guessFeatX;
+  if (selY) selY.value = guessFeatY;
+
+  for (let i = 0; i < 4; i++) {
+    const card = document.getElementById(`guessCard_${i}`);
+    const badge = document.getElementById(`guessBadge_${i}`);
+    if (!card || !badge) continue;
+
+    if (i === guessFeatX) {
+      card.className = 'guess-feat-card p-3.5 rounded-2xl bg-[#e8702a]/12 border-2 border-[#e8702a] shadow-lg shadow-[#e8702a]/20 cursor-pointer transition-all scale-[1.01]';
+      badge.className = 'text-[10px] px-2 py-0.5 rounded-md bg-[#e8702a] text-white font-bold shadow-sm';
+      badge.innerText = 'Trục X (Chơi)';
+    } else if (i === guessFeatY) {
+      card.className = 'guess-feat-card p-3.5 rounded-2xl bg-[#f2c14e]/12 border-2 border-[#f2c14e] shadow-lg shadow-[#f2c14e]/20 cursor-pointer transition-all scale-[1.01]';
+      badge.className = 'text-[10px] px-2 py-0.5 rounded-md bg-[#f2c14e] text-black font-bold shadow-sm';
+      badge.innerText = 'Trục Y (Chơi)';
+    } else {
+      card.className = 'guess-feat-card p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 cursor-pointer transition-all hover:border-white/30';
+      badge.className = 'text-[10px] px-1.5 py-0.5 rounded-md bg-white/10 text-white/50 font-medium';
+      badge.innerText = 'Nhấp chọn';
+    }
+  }
+
+  const titleEl = document.getElementById('guessChartTitle');
+  if (titleEl) {
+    titleEl.innerText = `📍 Vị trí Mẫu ngẫu nhiên (${FEATURE_NAMES[guessFeatX]} vs ${FEATURE_NAMES[guessFeatY]})`;
+  }
 }
 
-function predictSVMDatasetSample(sl, sw, pl, pw) {
-  if (pl <= 2.45 || pw <= 0.75) return 'setosa';
-  const score = -0.15 * sl - 0.4 * sw + 0.9 * pl + 1.0 * pw - 4.0;
-  return score >= 0 ? 'virginica' : 'versicolor';
+window.generateRandomSample = async function() {
+  try {
+    const res = await fetch('/random-sample');
+    if (res.ok) {
+      const data = await res.json();
+      currentGuessSample = {
+        sl: data.sepal_length,
+        sw: data.sepal_width,
+        pl: data.petal_length,
+        pw: data.petal_width,
+        trueClass: data.true_class
+      };
+      updateGuessSampleUI();
+      return;
+    }
+  } catch (e) {}
+
+  const sample = ACTIVE_IRIS_DATASET[Math.floor(Math.random() * ACTIVE_IRIS_DATASET.length)];
+  currentGuessSample = {
+    sl: sample[0],
+    sw: sample[1],
+    pl: sample[2],
+    pw: sample[3],
+    trueClass: SPECIES_NAMES[sample[4]]
+  };
+  updateGuessSampleUI();
+};
+
+function updateGuessSampleUI() {
+  if (!currentGuessSample) return;
+  const s = currentGuessSample;
+  document.getElementById('guessSepalLength').innerText = s.sl + ' cm';
+  document.getElementById('guessSepalWidth').innerText = s.sw + ' cm';
+  document.getElementById('guessPetalLength').innerText = s.pl + ' cm';
+  document.getElementById('guessPetalWidth').innerText = s.pw + ' cm';
+
+  updateGuessFeatureCardStyles();
+
+  // Đặt lại trạng thái lựa chọn
+  selectedGuess = null;
+  document.querySelectorAll('.guess-opt-btn').forEach(b => {
+    b.className = 'guess-opt-btn relative p-4 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-left transition-all flex items-center justify-between gap-3 group opacity-100';
+    const indicator = b.querySelector('.guess-check-indicator');
+    if (indicator) {
+      indicator.className = 'guess-check-indicator w-7 h-7 rounded-full border border-white/30 flex items-center justify-center text-xs shrink-0 transition-all opacity-40 bg-transparent text-white';
+    }
+    const tag = b.querySelector('.guess-active-tag');
+    if (tag) tag.classList.add('hidden');
+  });
+
+  const banner = document.getElementById('guessSelectionBanner');
+  if (banner) banner.classList.add('hidden');
+
+  const btnText = document.getElementById('guessBtnText');
+  if (btnText) btnText.innerText = 'Bước 2: Kiểm tra kết quả với AI (SVM)';
+
+  const resDiv = document.getElementById('guessResult');
+  if (resDiv) {
+    resDiv.className = 'p-5 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white/70';
+    resDiv.innerHTML = `💡 Hãy chọn 1 trong 3 loài hoa ở Bước 1 và nhấn nút kiểm tra để xem kết quả đối chiếu với mô hình SVM!`;
+  }
+
+  renderGuessChart(s);
 }
 
-function parseDelimitedText(text) {
-  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
-  if (lines.length === 0) return [];
-  const first = lines[0].trim();
-  let delimiter = ',';
-  if (first.includes('\t')) delimiter = '\t';
-  else if (first.includes(';')) delimiter = ';';
-  else if (first.includes(',')) delimiter = ',';
-  else delimiter = /\s+/;
+function renderGuessChart(sampleObj) {
+  const ctx = document.getElementById('guessChart');
+  if (!ctx) return;
 
-  const headers = first.split(delimiter).map(h => h.trim());
-  return lines.slice(1).map(line => {
-    const vals = line.split(delimiter).map(v => v.trim());
-    const obj = {};
-    headers.forEach((h, idx) => {
-      obj[h] = vals[idx] !== undefined ? vals[idx] : '';
-    });
-    return obj;
+  const featXName = FEATURE_NAMES[guessFeatX];
+  const featYName = FEATURE_NAMES[guessFeatY];
+
+  const titleEl = document.getElementById('guessChartTitle');
+  if (titleEl) {
+    titleEl.innerText = `📍 Vị trí Mẫu ngẫu nhiên (${featXName} vs ${featYName})`;
+  }
+
+  const sampleVals = sampleObj
+    ? [sampleObj.sl, sampleObj.sw, sampleObj.pl, sampleObj.pw]
+    : [5.1, 3.5, 1.4, 0.2];
+  const userX = sampleVals[guessFeatX];
+  const userY = sampleVals[guessFeatY];
+
+  const setosaData = ACTIVE_IRIS_DATASET.filter(d => d[4] === 0).map(d => ({ x: d[guessFeatX], y: d[guessFeatY] }));
+  const versicolorData = ACTIVE_IRIS_DATASET.filter(d => d[4] === 1).map(d => ({ x: d[guessFeatX], y: d[guessFeatY] }));
+  const virginicaData = ACTIVE_IRIS_DATASET.filter(d => d[4] === 2).map(d => ({ x: d[guessFeatX], y: d[guessFeatY] }));
+
+  if (guessChartInstance) {
+    guessChartInstance.options.scales.x.title.text = `${featXName} (cm)`;
+    guessChartInstance.options.scales.y.title.text = `${featYName} (cm)`;
+    guessChartInstance.data.datasets[0].data = setosaData;
+    guessChartInstance.data.datasets[1].data = versicolorData;
+    guessChartInstance.data.datasets[2].data = virginicaData;
+    guessChartInstance.data.datasets[3].data = [{ x: userX, y: userY }];
+    guessChartInstance.update();
+    return;
+  }
+
+  guessChartInstance = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Setosa', data: setosaData, backgroundColor: '#4ade80', pointRadius: 4 },
+        { label: 'Versicolor (Vàng hổ phách)', data: versicolorData, backgroundColor: '#f59e0b', pointRadius: 4 },
+        { label: 'Virginica', data: virginicaData, backgroundColor: '#c084fc', pointRadius: 4 },
+        {
+          label: '📍 Mẫu ngẫu nhiên',
+          data: [{ x: userX, y: userY }],
+          backgroundColor: '#ef4444',
+          borderColor: '#ffffff',
+          borderWidth: 2.5,
+          pointRadius: 10,
+          pointHoverRadius: 12
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: { display: true, text: `${featXName} (cm)`, color: '#f7f5f2' },
+          ticks: { color: 'rgba(247,245,242,0.65)' },
+          grid: { color: 'rgba(255,255,255,0.08)' }
+        },
+        y: {
+          title: { display: true, text: `${featYName} (cm)`, color: '#f7f5f2' },
+          ticks: { color: 'rgba(247,245,242,0.65)' },
+          grid: { color: 'rgba(255,255,255,0.08)' }
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#f7f5f2', boxWidth: 8, usePointStyle: true } }
+      }
+    }
   });
 }
 
-function findColKey(row, candidates) {
-  const keys = Object.keys(row);
-  for (const c of candidates) {
-    const found = keys.find(k => k.trim().toLowerCase() === c.trim().toLowerCase());
-    if (found) return found;
-  }
-  return null;
-}
+window.selectGuess = function(species, btn) {
+  selectedGuess = species;
 
-function extractSampleRow(row) {
-  if (Array.isArray(row)) {
-    if (row.length < 4) return null;
-    const sl = parseFloat(String(row[0]).replace(',', '.'));
-    const sw = parseFloat(String(row[1]).replace(',', '.'));
-    const pl = parseFloat(String(row[2]).replace(',', '.'));
-    const pw = parseFloat(String(row[3]).replace(',', '.'));
-    if (isNaN(sl) || isNaN(sw) || isNaN(pl) || isNaN(pw)) return null;
-    const trueLabel = row.length > 4 ? normalizeSpeciesLabel(row[4]) : '';
-    return { sl, sw, pl, pw, trueLabel };
+  let speciesVi = 'Iris Setosa';
+  let speciesColor = '#4ade80';
+  if (species === 'versicolor') {
+    speciesVi = 'Iris Versicolor (Vàng hổ phách)';
+    speciesColor = '#f59e0b';
+  } else if (species === 'virginica') {
+    speciesVi = 'Iris Virginica';
+    speciesColor = '#c084fc';
   }
 
-  const slKey = findColKey(row, ['sepal_length', 'sepal length', 'sepal.length', 'sepal_len', 'sl']);
-  const swKey = findColKey(row, ['sepal_width', 'sepal width', 'sepal.width', 'sepal_w', 'sw']);
-  const plKey = findColKey(row, ['petal_length', 'petal length', 'petal.length', 'petal_len', 'pl']);
-  const pwKey = findColKey(row, ['petal_width', 'petal width', 'petal.width', 'petal_w', 'pw']);
-
-  if (!slKey || !swKey || !plKey || !pwKey) {
-    // Fallback: Check if values can be parsed by numeric indices
-    const vals = Object.values(row);
-    if (vals.length >= 4) {
-      const sl = parseFloat(String(vals[0]).replace(',', '.'));
-      const sw = parseFloat(String(vals[1]).replace(',', '.'));
-      const pl = parseFloat(String(vals[2]).replace(',', '.'));
-      const pw = parseFloat(String(vals[3]).replace(',', '.'));
-      if (!isNaN(sl) && !isNaN(sw) && !isNaN(pl) && !isNaN(pw)) {
-        const trueLabel = vals.length > 4 ? normalizeSpeciesLabel(vals[4]) : '';
-        return { sl, sw, pl, pw, trueLabel };
-      }
+  // 1. Làm nổi bật rõ ràng nút đã chọn & giảm độ đậm các nút còn lại
+  document.querySelectorAll('.guess-opt-btn').forEach(b => {
+    b.className = 'guess-opt-btn relative p-4 rounded-2xl bg-white/[0.04] border border-white/10 text-left transition-all flex items-center justify-between gap-3 group opacity-50 hover:opacity-80 scale-100';
+    const indicator = b.querySelector('.guess-check-indicator');
+    if (indicator) {
+      indicator.className = 'guess-check-indicator w-7 h-7 rounded-full border border-white/30 flex items-center justify-center text-xs shrink-0 transition-all opacity-40 bg-transparent text-white';
     }
-    return null;
+    const tag = b.querySelector('.guess-active-tag');
+    if (tag) tag.classList.add('hidden');
+  });
+
+  if (btn) {
+    btn.className = 'guess-opt-btn relative p-4 rounded-2xl bg-gradient-to-r from-white/[0.12] to-[#e8702a]/20 border-2 border-[#e8702a] ring-4 ring-[#e8702a]/30 shadow-2xl shadow-[#e8702a]/30 text-left transition-all flex items-center justify-between gap-3 group opacity-100 scale-[1.03] z-10';
+    const indicator = btn.querySelector('.guess-check-indicator');
+    if (indicator) {
+      indicator.className = 'guess-check-indicator w-7 h-7 rounded-full bg-[#e8702a] border-2 border-white text-white font-bold text-sm shrink-0 transition-all opacity-100 shadow-lg shadow-[#e8702a]/60 scale-110';
+    }
+    const tag = btn.querySelector('.guess-active-tag');
+    if (tag) tag.classList.remove('hidden');
   }
 
-  const sl = parseFloat(String(row[slKey]).replace(',', '.'));
-  const sw = parseFloat(String(row[swKey]).replace(',', '.'));
-  const pl = parseFloat(String(row[plKey]).replace(',', '.'));
-  const pw = parseFloat(String(row[pwKey]).replace(',', '.'));
+  // 2. Hiện băng thông báo nổi bật lựa chọn của người dùng
+  const banner = document.getElementById('guessSelectionBanner');
+  const nameEl = document.getElementById('guessSelectedFlowerName');
+  const tagEl = document.getElementById('guessSelectedFlowerTag');
+  if (banner && nameEl) {
+    nameEl.innerText = speciesVi;
+    if (tagEl) {
+      tagEl.style.backgroundColor = speciesColor;
+      tagEl.style.color = (species === 'versicolor' || species === 'setosa') ? '#000000' : '#ffffff';
+    }
+    banner.classList.remove('hidden');
+  }
 
-  if (isNaN(sl) || isNaN(sw) || isNaN(pl) || isNaN(pw)) return null;
+  // 3. Đổi nhãn nút Bước 2 để người dùng an tâm về lựa chọn
+  const btnText = document.getElementById('guessBtnText');
+  if (btnText) {
+    btnText.innerHTML = `Bước 2: Kiểm tra dự đoán <b>"${speciesVi}"</b> với AI (SVM)`;
+  }
+};
 
-  const labelKey = findColKey(row, ['species', 'species_name', 'label', 'class', 'target', 'loài', 'true_label']);
-  const trueLabel = labelKey ? normalizeSpeciesLabel(row[labelKey]) : '';
+window.checkGuess = async function() {
+  if (!selectedGuess) {
+    alert('Vui lòng chọn 1 loài hoa ở Bước 1 trước khi kiểm tra!');
+    return;
+  }
+  const s = currentGuessSample;
+  const svmPred = await callPredictAPI(s.sl, s.sw, s.pl, s.pw);
+  const trueSpecies = (s.trueClass || svmPred).toLowerCase();
+  const choice = selectedGuess.toLowerCase();
 
-  return { sl, sw, pl, pw, trueLabel };
+  const isCorrect = (choice === trueSpecies) || (choice === svmPred.toLowerCase());
+
+  guessStats.total++;
+  if (isCorrect) guessStats.correct++;
+  else guessStats.wrong++;
+
+  updateGuessScoreUI();
+
+  const formattedChoice = choice.charAt(0).toUpperCase() + choice.slice(1);
+  const formattedTrue = trueSpecies.charAt(0).toUpperCase() + trueSpecies.slice(1);
+  const formattedPred = svmPred.charAt(0).toUpperCase() + svmPred.slice(1);
+
+  // YÊU CẦU II.2: BỎ ĐI CÁC DÒNG GIẢI THÍCH KHI ĐÃ ĐOÁN XONG HOA
+  const resDiv = document.getElementById('guessResult');
+  resDiv.className = isCorrect
+    ? 'p-5 rounded-2xl bg-[#4ade80]/10 border border-[#f2c14e] text-xs text-[#f7f5f2]'
+    : 'p-5 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-[#f7f5f2]';
+
+  resDiv.innerHTML = `
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <div class="text-sm font-bold flex items-center gap-2 mb-2 ${isCorrect ? 'text-[#4ade80]' : 'text-red-400'}">
+          <span>${isCorrect ? '🎉 CHÍNH XÁC XUẤT SẮC!' : '⚠️ CHƯA CHÍNH XÁC!'}</span>
+        </div>
+        <div class="space-y-1 text-xs text-white/80">
+          <div>• Lựa chọn của bạn: <b class="underline">Iris ${formattedChoice}</b></div>
+          <div>• Loài hoa thực tế: <b class="text-blue-400">Iris ${formattedTrue}</b></div>
+          <div>• AI (SVM Linear) nhận diện: <b class="${isCorrect ? 'text-[#4ade80]' : 'text-red-400'}">Iris ${formattedPred}</b></div>
+        </div>
+      </div>
+      <div class="px-4 py-2 rounded-2xl bg-white/[0.06] border border-white/10 text-center">
+        <div class="text-[10px] text-white/50 uppercase">Kết quả</div>
+        <div class="text-sm font-bold font-mono ${isCorrect ? 'text-[#f2c14e]' : 'text-red-400'}">
+          ${isCorrect ? '✓ Trùng khớp' : '✗ Khác biệt'}
+        </div>
+      </div>
+    </div>
+  `;
+
+  saveUserPrediction(s.sl, s.sw, s.pl, s.pw, svmPred, 'Đoán thử thách');
+};
+
+function updateGuessScoreUI() {
+  document.getElementById('guessTotalPlays').innerText = guessStats.total;
+  document.getElementById('guessCorrectPlays').innerText = guessStats.correct;
+  document.getElementById('guessWrongPlays').innerText = guessStats.wrong;
+  const pct = guessStats.total > 0 ? ((guessStats.correct / guessStats.total) * 100).toFixed(0) : 0;
+  document.getElementById('guessAccuracy').innerText = `${pct}%`;
 }
+
+window.resetGuessScore = function() {
+  guessStats.total = 0;
+  guessStats.correct = 0;
+  guessStats.wrong = 0;
+  updateGuessScoreUI();
+};
+
+// =====================================================================
+// 12. PHÂN TÍCH TẬP DỮ LIỆU (YÊU CẦU II.3: LUÔN HIỆN 2 NHÃN)
+// =====================================================================
+let currentFileAnalysis = null;
+let currentFileMode = 'unlabeled'; // 'unlabeled' or 'labeled'
+
+window.switchFileAnalysisMode = function(newMode) {
+  currentFileMode = newMode;
+  const unBtn = document.getElementById('fileModeBtnUnlabeled');
+  const lbBtn = document.getElementById('fileModeBtnLabeled');
+
+  if (unBtn && lbBtn) {
+    if (newMode === 'unlabeled') {
+      unBtn.className = 'file-mode-pill active px-6 py-2 rounded-full text-xs font-semibold transition-all bg-white text-gray-900';
+      lbBtn.className = 'file-mode-pill px-6 py-2 rounded-full text-xs font-semibold text-white/70 hover:text-white transition-all';
+    } else {
+      lbBtn.className = 'file-mode-pill active px-6 py-2 rounded-full text-xs font-semibold transition-all bg-white text-gray-900';
+      unBtn.className = 'file-mode-pill px-6 py-2 rounded-full text-xs font-semibold text-white/70 hover:text-white transition-all';
+    }
+  }
+
+  if (currentFileAnalysis) {
+    currentFileAnalysis.mode = newMode;
+    renderFileAnalysisUI();
+  }
+};
 
 window.analyzeFile = function() {
   const fileInput = document.getElementById('fileInput');
-  const file = fileInput?.files?.[0];
-  if (!file) return;
-
-  const displayEl = document.getElementById('fileNameDisplay');
-  if (displayEl) displayEl.innerText = file.name;
-
-  const ext = file.name.split('.').pop()?.toLowerCase();
-
-  const handleRawRows = (rawRows, fName) => {
-    const validRows = [];
-    rawRows.forEach((r, idx) => {
-      const extracted = extractSampleRow(r);
-      if (extracted) {
-        const pred = predictSVMDatasetSample(extracted.sl, extracted.sw, extracted.pl, extracted.pw);
-        const correct = extracted.trueLabel ? (extracted.trueLabel === pred) : null;
-        validRows.push({
-          index: validRows.length + 1,
-          sl: extracted.sl,
-          sw: extracted.sw,
-          pl: extracted.pl,
-          pw: extracted.pw,
-          trueLabel: extracted.trueLabel,
-          pred: pred,
-          correct: correct
-        });
-      }
-    });
-
-    if (validRows.length === 0) {
-      alert('Không tìm thấy dữ liệu hợp lệ. Tập tin cần chứa 4 đặc trưng: Sepal Length, Sepal Width, Petal Length, Petal Width.');
-      return;
-    }
-
-    const hasLabels = validRows.some(r => r.trueLabel !== '');
-    currentFileAnalysis = {
-      fileName: fName,
-      rows: validRows,
-      mode: hasLabels ? 'labeled' : 'unlabeled'
-    };
-
-    renderFileAnalysisUI();
-
-    // Ghi nhận vào lịch sử nhận diện
-    if (validRows.length > 0) {
-      const first = validRows[0];
-      saveUserPrediction(first.sl, first.sw, first.pl, first.pw, first.pred, `Phân tích file: ${fName} (${validRows.length} mẫu)`);
-    }
-  };
-
-  if (ext === 'txt') {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const text = e.target.result;
-        const raw = parseDelimitedText(text);
-        handleRawRows(raw, file.name);
-      } catch (err) {
-        alert('Không thể đọc file TXT. Vui lòng kiểm tra lại cấu trúc file!');
-      }
-    };
-    reader.readAsText(file);
-    return;
-  }
+  if (!fileInput || !fileInput.files.length) return;
+  const file = fileInput.files[0];
+  document.getElementById('fileNameDisplay').innerText = file.name;
 
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -2212,18 +2073,39 @@ window.analyzeFile = function() {
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawRows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-      handleRawRows(rawRows, file.name);
+
+      const validRows = [];
+      rawRows.forEach((r, idx) => {
+        const sl = parseFloat(r.sepal_length ?? r.SepalLength ?? r['Sepal Length'] ?? r['sepal length'] ?? r[0]) || 0;
+        const sw = parseFloat(r.sepal_width ?? r.SepalWidth ?? r['Sepal Width'] ?? r['sepal width'] ?? r[1]) || 0;
+        const pl = parseFloat(r.petal_length ?? r.PetalLength ?? r['Petal Length'] ?? r['petal length'] ?? r[2]) || 0;
+        const pw = parseFloat(r.petal_width ?? r.PetalWidth ?? r['Petal Width'] ?? r['petal width'] ?? r[3]) || 0;
+        const trueLbl = (r.species ?? r.Species ?? r.label ?? r.Label ?? '').toString().toLowerCase();
+
+        if (sl > 0 || pl > 0) {
+          const pred = predictLinearFast(sl, sw, pl, pw);
+          const correct = trueLbl ? (trueLbl.includes(pred) || pred.includes(trueLbl)) : null;
+          validRows.push({ sl, sw, pl, pw, trueLabel: trueLbl, pred, correct });
+        }
+      });
+
+      if (validRows.length === 0) {
+        alert('Tập tin không chứa các đặc trưng hợp lệ (sepal_length, sepal_width, petal_length, petal_width).');
+        return;
+      }
+
+      currentFileAnalysis = {
+        fileName: file.name,
+        rows: validRows,
+        mode: currentFileMode
+      };
+
+      renderFileAnalysisUI();
     } catch (err) {
-      alert('Không thể đọc file. Vui lòng kiểm tra định dạng CSV/Excel!');
+      alert('Không thể đọc file. Vui lòng kiểm tra lại định dạng!');
     }
   };
   reader.readAsArrayBuffer(file);
-};
-
-window.switchFileAnalysisMode = function(newMode) {
-  if (!currentFileAnalysis) return;
-  currentFileAnalysis.mode = newMode;
-  renderFileAnalysisUI();
 };
 
 function renderFileAnalysisUI() {
@@ -2243,223 +2125,134 @@ function renderFileAnalysisUI() {
   const wrongCount = validLabeled.filter(r => r.correct === false).length;
   const accuracy = validLabeled.length > 0 ? (correctCount / validLabeled.length) * 100 : 0;
 
-  let html = '';
-
-  // 1. Chuyển đổi chế độ (Chưa biết nhãn vs Có nhãn)
-  html += `
-    <div class="file-mode-box">
-      <button class="file-mode-btn ${mode === 'unlabeled' ? 'active' : ''}" onclick="switchFileAnalysisMode('unlabeled')">
-        Chưa biết nhãn<br>
-        <small>Phân loại</small>
-      </button>
-      <button class="file-mode-btn ${mode === 'labeled' ? 'active' : ''}" onclick="switchFileAnalysisMode('labeled')">
-        Có nhãn<br>
-        <small>Kiểm tra dự đoán</small>
-      </button>
-    </div>
+  let html = `
+    <div class="space-y-6">
+      <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex justify-between items-center text-xs">
+        <div><b>Tập tin:</b> ${fileName}</div>
+        <div><b>Chế độ:</b> ${mode === 'labeled' ? 'Đã có nhãn – Kiểm tra dự đoán' : 'Chưa có nhãn – Phân loại'}</div>
+        <div><b>Số mẫu hợp lệ:</b> ${total}</div>
+      </div>
   `;
 
-  // 2. Thông tin tệp tin & chế độ
-  html += `
-    <div class="file-meta-info">
-      <div><b>File:</b> ${fileName}</div>
-      <div><b>Chế độ:</b> ${mode === 'labeled' ? 'Có nhãn – Kiểm tra dự đoán' : 'Chưa biết nhãn – Phân loại'}</div>
-      <div><b>Số mẫu hợp lệ:</b> ${total}</div>
-    </div>
-  `;
-
-  // 3. 4 thẻ thống kê KPI
   if (mode === 'labeled') {
     html += `
-      <div class="file-overview-grid">
-        <div class="file-stat-card">
-          <div class="file-stat-title">Tổng mẫu</div>
-          <div class="file-stat-number">${total}</div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-white/50">Tổng mẫu</div>
+          <div class="text-2xl font-bold font-mono text-white">${total}</div>
         </div>
-        <div class="file-stat-card">
-          <div class="file-stat-title">Dự đoán đúng</div>
-          <div class="file-stat-number success">${correctCount}</div>
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-white/50">Dự đoán đúng</div>
+          <div class="text-2xl font-bold font-mono text-[#4ade80]">${correctCount}</div>
         </div>
-        <div class="file-stat-card">
-          <div class="file-stat-title">Dự đoán sai</div>
-          <div class="file-stat-number error">${wrongCount}</div>
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-white/50">Dự đoán sai</div>
+          <div class="text-2xl font-bold font-mono text-red-400">${wrongCount}</div>
         </div>
-        <div class="file-stat-card">
-          <div class="file-stat-title">Accuracy (có nhãn)</div>
-          <div class="file-stat-number">${accuracy.toFixed(2)}%</div>
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-white/50">Accuracy (có nhãn)</div>
+          <div class="text-2xl font-bold font-mono text-[#f2c14e]">${accuracy.toFixed(1)}%</div>
         </div>
-      </div>
-
-      <div class="file-alert-box">
-        Accuracy được tính trên <b>${validLabeled.length}</b> mẫu có nhãn thật trong tổng số <b>${total}</b> mẫu hợp lệ.
       </div>
     `;
   } else {
     html += `
-      <div class="file-overview-grid">
-        <div class="file-stat-card">
-          <div class="file-stat-title">Tổng mẫu</div>
-          <div class="file-stat-number">${total}</div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-white/50">Tổng mẫu</div>
+          <div class="text-2xl font-bold font-mono text-white">${total}</div>
         </div>
-        <div class="file-stat-card">
-          <div class="file-stat-title">SVM → Setosa</div>
-          <div class="file-stat-number">${counts.setosa}</div>
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-[#4ade80]">SVM → Setosa</div>
+          <div class="text-2xl font-bold font-mono text-[#4ade80]">${counts.setosa}</div>
         </div>
-        <div class="file-stat-card">
-          <div class="file-stat-title">SVM → Versicolor</div>
-          <div class="file-stat-number">${counts.versicolor}</div>
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-[#f59e0b]">SVM → Versicolor</div>
+          <div class="text-2xl font-bold font-mono text-[#f59e0b]">${counts.versicolor}</div>
         </div>
-        <div class="file-stat-card">
-          <div class="file-stat-title">SVM → Virginica</div>
-          <div class="file-stat-number">${counts.virginica}</div>
+        <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div class="text-[11px] text-[#c084fc]">SVM → Virginica</div>
+          <div class="text-2xl font-bold font-mono text-[#c084fc]">${counts.virginica}</div>
         </div>
       </div>
     `;
   }
 
-  // 4. Phân bố theo kết quả SVM
-  const distTitle = mode === 'labeled' ? '📊 Phân bố theo kết quả SVM' : '📊 Phân bố kết quả SVM';
+  // Bảng kết quả
   html += `
-    <h3 style="margin: 24px 0 14px; font-size: 16px; font-weight: 700; color: #1f2937;">${distTitle}</h3>
+      <div class="overflow-x-auto rounded-2xl border border-white/10">
+        <table class="w-full border-collapse text-xs">
+          <thead>
+            <tr class="bg-white/[0.06] text-white/70 text-left border-b border-white/10">
+              <th class="py-3 px-3">#</th>
+              <th class="py-3 px-3">Sepal Length</th>
+              <th class="py-3 px-3">Sepal Width</th>
+              <th class="py-3 px-3">Petal Length</th>
+              <th class="py-3 px-3">Petal Width</th>
+              ${mode === 'labeled' ? '<th class="py-3 px-3">Nhãn thật</th>' : ''}
+              <th class="py-3 px-3">SVM Dự đoán</th>
+              ${mode === 'labeled' ? '<th class="py-3 px-3 text-center">Kết quả</th>' : ''}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/10">
   `;
 
-  ['setosa', 'versicolor', 'virginica'].forEach(sp => {
-    const meta = FLOWER_META[sp];
-    const count = counts[sp];
-    const pct = total > 0 ? (count / total) * 100 : 0;
+  rows.slice(0, 100).forEach((r, idx) => {
     html += `
-      <div class="file-flower-card">
-        <img src="${meta.image}" alt="${meta.name}" onerror="this.src='${meta.image.replace('.jpg', '.svg')}'">
-        <div class="file-flower-content">
-          <div class="file-flower-title">${meta.name}</div>
-          <div class="file-flower-count">${count} mẫu (${pct.toFixed(1)}%)</div>
-          <div class="file-progress-track">
-            <div class="file-progress-fill" style="width: ${pct}%;"></div>
-          </div>
-        </div>
-      </div>
+      <tr class="hover:bg-white/[0.04] transition-colors">
+        <td class="py-2.5 px-3 text-white/50">${idx + 1}</td>
+        <td class="py-2.5 px-3 font-mono text-white">${r.sl}</td>
+        <td class="py-2.5 px-3 font-mono text-white">${r.sw}</td>
+        <td class="py-2.5 px-3 font-mono text-white">${r.pl}</td>
+        <td class="py-2.5 px-3 font-mono text-white">${r.pw}</td>
+        ${mode === 'labeled' ? `<td class="py-2.5 px-3 font-bold">${r.trueLabel || '—'}</td>` : ''}
+        <td class="py-2.5 px-3 font-bold" style="color: ${SPECIES_COLORS[r.pred] || '#4ade80'}">${r.pred.toUpperCase()}</td>
+        ${mode === 'labeled' ? `<td class="py-2.5 px-3 text-center font-bold ${r.correct ? 'text-[#4ade80]' : 'text-red-400'}">${r.correct ? '✓ Đúng' : '✗ Sai'}</td>` : ''}
+      </tr>
     `;
   });
 
-  // 5. Tiêu đề bảng & Nút Tải kết quả (.csv)
-  const tableTitle = mode === 'labeled' ? '🔎 So sánh SVM với nhãn thật' : '📋 Bảng chi tiết kết quả phân loại';
   html += `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 28px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1f2937;">${tableTitle}</h3>
-      <button class="file-export-btn" onclick="exportFileAnalysisCSV()">
-        📥 Tải kết quả (.csv)
-      </button>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-end pt-2">
+        <button type="button" class="px-6 py-2.5 rounded-full bg-white text-gray-900 font-semibold text-xs shadow-md" onclick="exportFileAnalysisCSV()">
+          📥 Tải kết quả (.csv)
+        </button>
+      </div>
     </div>
   `;
-
-  // 6. Bảng dữ liệu chi tiết
-  if (mode === 'labeled') {
-    let tableRows = rows.map((r, i) => {
-      const trueFormatted = r.trueLabel ? (FLOWER_DISPLAY_NAMES[r.trueLabel] || r.trueLabel) : '—';
-      const predFormatted = FLOWER_DISPLAY_NAMES[r.pred] || r.pred;
-      const resLabel = r.correct === null ? '—' : r.correct ? '<span class="file-correct">✓ Đúng</span>' : '<span class="file-wrong">✗ Sai</span>';
-      return `
-        <tr style="border-bottom: 1px solid #f3f4f6;">
-          <td style="padding: 12px 14px; text-align: center;">${i + 1}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.sl}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.sw}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.pl}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.pw}</td>
-          <td style="padding: 12px 14px; text-align: center;" class="file-flower-cell ${r.trueLabel}">${trueFormatted}</td>
-          <td style="padding: 12px 14px; text-align: center;" class="file-flower-cell ${r.pred}">${predFormatted}</td>
-          <td style="padding: 12px 14px; text-align: center;">${resLabel}</td>
-        </tr>
-      `;
-    }).join('');
-
-    html += `
-      <div class="table-wrapper" style="margin-top: 0; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; min-width: 800px; background: white;">
-          <thead>
-            <tr style="background: #ffffff; border-bottom: 1px solid #e5e7eb;">
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">#</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Sepal Length</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Sepal Width</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Petal Length</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Petal Width</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Nhãn thật</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">SVM dự đoán</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Kết quả</th>
-            </tr>
-          </thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-      </div>
-    `;
-  } else {
-    let tableRows = rows.map((r, i) => {
-      const predFormatted = FLOWER_DISPLAY_NAMES[r.pred] || r.pred;
-      return `
-        <tr style="border-bottom: 1px solid #f3f4f6;">
-          <td style="padding: 12px 14px; text-align: center;">${i + 1}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.sl}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.sw}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.pl}</td>
-          <td style="padding: 12px 14px; text-align: center;">${r.pw}</td>
-          <td style="padding: 12px 14px; text-align: center;" class="file-flower-cell ${r.pred}">${predFormatted}</td>
-        </tr>
-      `;
-    }).join('');
-
-    html += `
-      <div class="table-wrapper" style="margin-top: 0; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; min-width: 800px; background: white;">
-          <thead>
-            <tr style="background: #ffffff; border-bottom: 1px solid #e5e7eb;">
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">#</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Sepal Length</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Sepal Width</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Petal Length</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">Petal Width</th>
-              <th style="padding: 12px 14px; font-size: 13px; font-weight: 600; color: #374151; text-align: center;">SVM dự đoán</th>
-            </tr>
-          </thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-      </div>
-    `;
-  }
 
   resDiv.innerHTML = html;
 }
 
 window.exportFileAnalysisCSV = function() {
   if (!currentFileAnalysis || !currentFileAnalysis.rows.length) return;
-  const { rows, mode, fileName } = currentFileAnalysis;
+  const { rows, mode } = currentFileAnalysis;
 
-  let csvContent = '';
+  let csv = 'Sepal_Length,Sepal_Width,Petal_Length,Petal_Width,SVM_Prediction\n';
   if (mode === 'labeled') {
-    csvContent = 'Sepal_Length,Sepal_Width,Petal_Length,Petal_Width,True_Label,SVM_Prediction,Result\n';
-    rows.forEach(r => {
-      const res = r.correct === null ? '' : r.correct ? 'Correct' : 'Wrong';
-      const trueName = FLOWER_DISPLAY_NAMES[r.trueLabel] || r.trueLabel || '';
-      const predName = FLOWER_DISPLAY_NAMES[r.pred] || r.pred;
-      csvContent += `${r.sl},${r.sw},${r.pl},${r.pw},${trueName},${predName},${res}\n`;
-    });
-  } else {
-    csvContent = 'Sepal_Length,Sepal_Width,Petal_Length,Petal_Width,SVM_Prediction\n';
-    rows.forEach(r => {
-      const predName = FLOWER_DISPLAY_NAMES[r.pred] || r.pred;
-      csvContent += `${r.sl},${r.sw},${r.pl},${r.pw},${predName}\n`;
-    });
+    csv = 'Sepal_Length,Sepal_Width,Petal_Length,Petal_Width,True_Label,SVM_Prediction,Result\n';
   }
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  rows.forEach(r => {
+    if (mode === 'labeled') {
+      csv += `${r.sl},${r.sw},${r.pl},${r.pw},${r.trueLabel},${r.pred},${r.correct ? 'Correct' : 'Wrong'}\n`;
+    } else {
+      csv += `${r.sl},${r.sw},${r.pl},${r.pw},${r.pred}\n`;
+    }
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `iris_svm_analysis_${mode}_${Date.now()}.csv`;
-  document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
 };
 
 window.downloadSampleFile = function() {
-  const csvContent =
+  const csv =
     'sepal_length,sepal_width,petal_length,petal_width,species\n' +
     '5.1,3.5,1.4,0.2,setosa\n' +
     '4.9,3.0,1.4,0.2,setosa\n' +
@@ -2467,74 +2260,157 @@ window.downloadSampleFile = function() {
     '5.7,2.8,4.5,1.3,versicolor\n' +
     '6.5,3.0,5.5,1.8,virginica\n' +
     '7.2,3.6,6.1,2.5,virginica\n';
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = 'iris_sample_test.csv';
-  document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
 };
 
 // =====================================================================
-// 11. ADMIN DASHBOARD & STATS (MỤC IX & X)
+// 13. ADMIN: LỊCH SỬ THÍ NGHIỆM & QUẢN TRỊ (YÊU CẦU II.4)
 // =====================================================================
 function renderAdminExperimentsTable() {
   const tbody = document.getElementById('adminExperimentsTableBody');
   if (!tbody) return;
 
   if (allSystemExperiments.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="padding:20px; color:#6b7280;">Chưa có thí nghiệm nào trong hệ thống.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-white/50 text-xs">Chưa có thí nghiệm nào trong hệ thống.</td></tr>`;
     return;
   }
 
   let html = '';
   allSystemExperiments.forEach(e => {
+    const userName = e.userName || e.userEmail || 'Tài khoản người dùng';
+    const uId = e.userId || 'unknown';
+
     html += `
-      <tr>
-        <td style="font-weight:bold; text-align:left; padding-left:12px;">${e.userName || e.userEmail || 'User'}</td>
-        <td><span class="tag-kernel">${e.kernel}</span></td>
-        <td>C=${e.C}, γ=${e.gamma}</td>
-        <td style="font-size:11.5px;">${e.features ? e.features.join(', ') : '4 features'}</td>
-        <td style="font-weight:700; color:#4f46e5;">${e.svCount || '-'} SVs</td>
-        <td>${e.precision || '-'}</td>
-        <td>${e.recall || '-'}</td>
-        <td>${e.f1 || '-'}</td>
-        <td style="color:#059669; font-weight:600;">${e.execTime} ms</td>
-        <td style="font-size:11.5px; color:#6b7280;">${e.timestamp}</td>
+      <tr class="hover:bg-white/[0.04] transition-colors">
+        <td class="py-3 px-4 font-bold">
+          <!-- YÊU CẦU II.4: BẤM VÔ CHI TIẾT TÊN TÀI KHOẢN -->
+          <button type="button" class="text-[#e8702a] hover:underline flex items-center gap-1.5" onclick="openAdminUserDetail('${uId}', '${userName}')">
+            <span>👤</span> ${userName}
+          </button>
+        </td>
+        <td class="py-3 px-3 uppercase font-semibold text-[#f2c14e]">${e.kernel}</td>
+        <td class="py-3 px-3 font-mono text-[11px] text-white/70">C=${e.C}, γ=${e.gamma}</td>
+        <td class="py-3 px-3 text-[11px] text-white/70">${e.features ? e.features.join(', ') : '4 features'}</td>
+        <td class="py-3 px-3 font-mono text-purple-300 font-bold">${e.svCount ?? 0} SVs</td>
+        <td class="py-3 px-3 text-center text-white/80">${e.precision ?? '-'}</td>
+        <td class="py-3 px-3 text-center text-white/80">${e.recall ?? '-'}</td>
+        <td class="py-3 px-3 text-center text-white/80">${e.f1 ?? '-'}</td>
+        <td class="py-3 px-3 text-center text-emerald-400 font-mono">${e.execTime ?? 1} ms</td>
+        <td class="py-3 px-3 text-center text-white/50 text-[11px]">${e.timestamp || ''}</td>
+        <td class="py-3 px-3 text-center">
+          <!-- YÊU CẦU II.4: NÚT XOÁ LỊCH SỬ THÍ NGHIỆM ĐÓ -->
+          <button type="button" class="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded-full hover:bg-red-500/10" onclick="deleteAdminExperiment('${e.id}')">
+            Xóa
+          </button>
+        </td>
       </tr>
     `;
   });
   tbody.innerHTML = html;
 }
 
+window.deleteAdminExperiment = async function(id) {
+  if (!confirm('Bạn có chắc muốn xóa bản ghi thí nghiệm này khỏi hệ thống?')) return;
+  allSystemExperiments = allSystemExperiments.filter(x => x.id !== id);
+  localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('experiment_history').delete().eq('id', id);
+    } catch (e) {}
+  }
+  renderAdminExperimentsTable();
+};
+
+// YÊU CẦU II.4: BẤM VÔ TÊN TÀI KHOẢN HIỆN NHỮNG THAO TÁC TÀI KHOẢN ĐÓ LÀM
+window.openAdminUserDetail = function(userId, userName) {
+  const modal = document.getElementById('adminUserDetailModal');
+  const title = document.getElementById('adminDetailUserTitle');
+  const sub = document.getElementById('adminDetailUserSub');
+  const content = document.getElementById('adminUserDetailContent');
+
+  if (title) title.innerText = `Thao tác của tài khoản: ${userName}`;
+  if (sub) sub.innerText = `Mã tài khoản (User ID): ${userId}`;
+
+  // Lọc tất cả các thí nghiệm và nhận diện của user này
+  const userExps = allSystemExperiments.filter(x => x.userId === userId || x.userName === userName);
+  const userPreds = userHistory.filter(x => x.userId === userId);
+
+  let html = `
+    <div class="space-y-4">
+      <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+        <div class="font-bold text-white text-xs mb-2">📊 Tổng kết hoạt động:</div>
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>Tổng số lần huấn luyện SVM: <b class="text-[#f2c14e]">${userExps.length}</b></div>
+          <div>Lần hoạt động gần nhất: <b class="text-white">${userExps[0]?.timestamp || 'Chưa rõ'}</b></div>
+        </div>
+      </div>
+
+      <div class="font-bold text-white text-xs">🧪 Danh sách các lần huấn luyện SVM đã thực hiện:</div>
+  `;
+
+  if (userExps.length === 0) {
+    html += `<div class="text-white/50 text-xs py-3">Tài khoản này chưa lưu thí nghiệm nào.</div>`;
+  } else {
+    html += `<div class="space-y-2">`;
+    userExps.forEach((exp, idx) => {
+      html += `
+        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex justify-between items-center text-xs">
+          <div>
+            <div class="font-semibold text-white">#${idx + 1} · Kernel: <span class="text-[#e8702a]">${exp.kernel.toUpperCase()}</span> (C=${exp.C}, γ=${exp.gamma})</div>
+            <div class="text-[11px] text-white/50">${exp.timestamp} · Đặc trưng: ${Array.isArray(exp.features) ? exp.features.join(', ') : '4 đặc trưng'}</div>
+          </div>
+          <div class="text-right">
+            <span class="text-emerald-400 font-bold font-mono">${exp.accuracy}% Acc</span>
+            <div class="text-[10px] text-white/40">${exp.svCount || 0} Support Vectors</div>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  if (content) content.innerHTML = html;
+  if (modal) modal.classList.remove('hidden'), modal.classList.add('flex');
+};
+
+window.closeAdminUserDetailModal = function() {
+  const modal = document.getElementById('adminUserDetailModal');
+  if (modal) modal.classList.add('hidden'), modal.classList.remove('flex');
+};
+
 function renderAdminStats() {
   const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
   const totalUsersCount = registeredUsers.length > 0 ? registeredUsers.length : (currentUser.id !== 'guest_user' ? 1 : 0);
 
-  document.getElementById('statTotalUsers').innerText = totalUsersCount;
-  document.getElementById('statTotalPredictions').innerText = userHistory.length;
-  document.getElementById('statTotalExperiments').innerText = allSystemExperiments.length;
+  const uCountEl = document.getElementById('statTotalUsers');
+  if (uCountEl) uCountEl.innerText = totalUsersCount;
+
+  const predCountEl = document.getElementById('statTotalPredictions');
+  if (predCountEl) predCountEl.innerText = userHistory.length;
+
+  const expCountEl = document.getElementById('statTotalExperiments');
+  if (expCountEl) expCountEl.innerText = allSystemExperiments.length;
 
   const kernelCounts = { linear: 0, rbf: 0, poly: 0, sigmoid: 0, precomputed: 0 };
-
   allSystemExperiments.forEach(e => {
-    if (kernelCounts[e.kernel] !== undefined) {
-      kernelCounts[e.kernel]++;
-    }
+    if (kernelCounts[e.kernel] !== undefined) kernelCounts[e.kernel]++;
   });
 
-  // Tìm model phổ biến nhất
-  let maxCount = 0;
-  let topModel = '-';
+  let topM = 'RBF', maxC = 0;
   Object.keys(kernelCounts).forEach(k => {
-    if (kernelCounts[k] > maxCount) {
-      maxCount = kernelCounts[k];
-      topModel = k.toUpperCase();
+    if (kernelCounts[k] > maxC) {
+      maxC = kernelCounts[k];
+      topM = k.toUpperCase();
     }
   });
-  const statTopModelEl = document.getElementById('statTopModel');
-  if (statTopModelEl) statTopModelEl.innerText = topModel;
+  const topMEl = document.getElementById('statTopModel');
+  if (topMEl) topMEl.innerText = topM;
 
   const tbody = document.getElementById('statKernelTableBody');
   if (tbody) {
@@ -2545,10 +2421,10 @@ function renderAdminStats() {
       const pct = total > 0 ? ((c / total) * 100).toFixed(1) + '%' : '0%';
       html += `
         <tr>
-          <td style="font-weight:bold; text-align:left; padding-left:14px;">${k.toUpperCase()}</td>
-          <td>${c} lần</td>
-          <td>${pct}</td>
-          <td style="color:#4f46e5; font-weight:600;">Sẵn sàng</td>
+          <td class="py-2.5 px-4 font-bold text-white">${k.toUpperCase()}</td>
+          <td class="py-2.5 px-4 font-mono">${c} lần</td>
+          <td class="py-2.5 px-4 font-mono text-white/70">${pct}</td>
+          <td class="py-2.5 px-4 text-emerald-400 font-semibold">Sẵn sàng</td>
         </tr>
       `;
     });
@@ -2557,285 +2433,67 @@ function renderAdminStats() {
 
   const usersBody = document.getElementById('adminUsersTableBody');
   if (usersBody) {
-    if (registeredUsers.length === 0 && currentUser.id === 'guest_user') {
-      usersBody.innerHTML = `<tr><td colspan="5" style="padding:16px; color:#6b7280;">Chưa có người dùng nào đăng ký trong hệ thống.</td></tr>`;
-    } else {
-      const list = registeredUsers.length > 0 ? registeredUsers : [currentUser];
-      usersBody.innerHTML = list.map(u => `
+    let html = '';
+    const usersToRender = registeredUsers.length > 0 ? registeredUsers : [currentUser];
+    usersToRender.forEach(u => {
+      html += `
         <tr>
-          <td style="text-align:left; padding-left:14px; font-weight:600;">${u.email}</td>
-          <td><span class="role-badge ${u.role ? u.role.toLowerCase() : 'user'}">${u.role || 'USER'}</span></td>
-          <td>${u.createdAt || new Date().toLocaleDateString('vi-VN')}</td>
-          <td style="color:#059669; font-weight:600;">Đang hoạt động</td>
-          <td>-</td>
+          <td class="py-2.5 px-4 font-bold text-white">${u.name || u.email || 'User'}</td>
+          <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-[#f2c14e]/20 text-[#f2c14e]' : 'bg-white/10 text-white'}">${u.role || 'USER'}</span></td>
+          <td class="py-2.5 px-4 text-white/60">${u.createdAt || 'Hôm nay'}</td>
+          <td class="py-2.5 px-4 text-emerald-400">Hoạt động</td>
         </tr>
-      `).join('');
-    }
+      `;
+    });
+    usersBody.innerHTML = html;
   }
 }
 
-// 12. ABOUT PAGE ADMIN EDIT (MỤC XI)
-window.toggleEditAbout = function() {
-  const display = document.getElementById('aboutContentDisplay');
-  const editArea = document.getElementById('aboutEditArea');
-  const textarea = document.getElementById('aboutTextarea');
-
-  if (editArea.style.display === 'none') {
-    textarea.value = display.innerText;
-    display.style.display = 'none';
-    editArea.style.display = 'block';
-  } else {
-    display.style.display = 'block';
-    editArea.style.display = 'none';
-  }
-};
-
-window.saveAboutContent = function() {
-  const val = document.getElementById('aboutTextarea').value;
-  document.getElementById('aboutContentDisplay').innerText = val;
-  window.toggleEditAbout();
-  alert('✓ Đã cập nhật nội dung Giới thiệu!');
-};
-
-// 13. AUTH GATE & MODAL LOGIC (BẮT BUỘC ĐĂNG NHẬP & SUPABASE)
-let currentGateTab = 'signin';
-
+// =====================================================================
+// 14. AUTH GATE & MODALS (NGOẠI LỆ 1B & YÊU CẦU II.1)
+// =====================================================================
 window.switchGateAuthTab = function(tab) {
-  currentGateTab = tab;
-  document.getElementById('gateTabSignIn').classList.toggle('active', tab === 'signin');
-  document.getElementById('gateTabSignUp').classList.toggle('active', tab === 'signup');
-  
-  const nameRow = document.getElementById('gateNameRow');
-  const submitBtn = document.getElementById('gateSubmitBtn');
-  const errBox = document.getElementById('gateAuthError');
-  if (errBox) errBox.style.display = 'none';
+  const isSignIn = tab === 'signin';
+  document.getElementById('gateTabSignIn').className = isSignIn
+    ? 'flex-1 py-2 text-xs font-semibold rounded-full transition-all bg-white text-gray-900 shadow'
+    : 'flex-1 py-2 text-xs font-semibold rounded-full transition-all text-white/70 hover:text-white';
 
-  if (tab === 'signup') {
-    if (nameRow) nameRow.style.display = 'block';
-    if (submitBtn) submitBtn.innerText = '✨ Đăng ký & Vào hệ thống';
-  } else {
-    if (nameRow) nameRow.style.display = 'none';
-    if (submitBtn) submitBtn.innerText = '🚀 Đăng nhập vào Hệ thống';
-  }
+  document.getElementById('gateTabSignUp').className = !isSignIn
+    ? 'flex-1 py-2 text-xs font-semibold rounded-full transition-all bg-white text-gray-900 shadow'
+    : 'flex-1 py-2 text-xs font-semibold rounded-full transition-all text-white/70 hover:text-white';
+
+  document.getElementById('gateNameRow').style.display = isSignIn ? 'none' : 'block';
+  document.getElementById('gateSubmitBtn').innerText = isSignIn ? 'Đăng nhập vào Hệ thống' : 'Tạo tài khoản mới';
 };
 
 window.handleGateAuthSubmit = async function(e) {
   e.preventDefault();
-  const emailInput = document.getElementById('gateEmailInput');
-  const passwordInput = document.getElementById('gatePasswordInput');
-  const nameInput = document.getElementById('gateNameInput');
+  const email = document.getElementById('gateEmailInput').value.trim();
+  const password = document.getElementById('gatePasswordInput').value;
+  const name = document.getElementById('gateNameInput')?.value.trim() || email.split('@')[0];
+  const isSignUp = document.getElementById('gateNameRow').style.display === 'block';
   const errBox = document.getElementById('gateAuthError');
+  const successBox = document.getElementById('gateAuthSuccess');
   const submitBtn = document.getElementById('gateSubmitBtn');
 
-  const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
-  const password = passwordInput ? passwordInput.value : '';
-  let name = (nameInput && nameInput.value.trim()) || email.split('@')[0];
-
-  if (!email || !password) return;
   if (errBox) errBox.style.display = 'none';
 
-  // Cho phép mật khẩu 'admin' (5 ký tự) hoặc tối thiểu 6 ký tự với tài khoản thông thường
-  if (password.length < 5 || (password.length < 6 && !(email === 'admin@gmail.com' && password === 'admin'))) {
+  const role = (email === 'admin@gmail.com' || email.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER';
+  let userId = 'u_' + Date.now();
+
+  if (password && password.length < 5) {
     if (errBox) {
       errBox.style.display = 'block';
-      errBox.innerText = '⚠️ Mật khẩu yêu cầu tối thiểu 6 ký tự.';
+      errBox.innerText = '⚠️ Mật khẩu yêu cầu tối thiểu 5 ký tự!';
     }
     return;
   }
 
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerText = '⏳ Đang xử lý...';
+  // Tài khoản Admin chuẩn
+  if (email === 'admin@gmail.com' && password === 'admin') {
+    userId = '00000000-0000-0000-0000-000000000001';
   }
 
-  let role = (email === 'admin@gmail.com' || email.includes('admin')) ? 'ADMIN' : 'USER';
-  let userId = role === 'ADMIN' ? '00000000-0000-0000-0000-000000000001' : ('u_' + Date.now());
-  if (email === 'admin@gmail.com' && (!nameInput || !nameInput.value.trim())) {
-    name = 'Lê Thanh Thảo';
-  }
-
-  try {
-    if (currentGateTab === 'signup') {
-      // ==========================================
-      // ĐĂNG KÝ TRỰC TIẾP (KHÔNG CẦN XÁC THỰC EMAIL)
-      // ==========================================
-      let alreadyExists = false;
-
-      // 1. Kiểm tra trên Supabase
-      if (supabaseClient) {
-        try {
-          const { data: dbUser } = await supabaseClient.from('app_users').select('id, email').eq('email', email);
-          if (dbUser && dbUser.length > 0) alreadyExists = true;
-        } catch (e1) {}
-
-        if (!alreadyExists) {
-          try {
-            const { data: profUser } = await supabaseClient.from('profiles').select('id, email').eq('email', email);
-            if (profUser && profUser.length > 0) alreadyExists = true;
-          } catch (e2) {}
-        }
-      }
-
-      // 2. Kiểm tra trong LocalStorage
-      const localUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
-      if (localUsers.some(u => u.email.toLowerCase() === email)) {
-        alreadyExists = true;
-      }
-
-      if (alreadyExists) {
-        if (errBox) {
-          errBox.style.display = 'block';
-          errBox.innerText = '⚠️ Email này đã được đăng ký. Vui lòng chuyển sang tab "Đăng nhập"!';
-        }
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerText = '✨ Đăng ký & Vào hệ thống';
-        }
-        return;
-      }
-
-      // 3. Lưu vào cơ sở dữ liệu Supabase
-      userId = 'u_' + Date.now();
-      const newUserRecord = {
-        id: userId,
-        name: name,
-        email: email,
-        password: password,
-        role: role,
-        created_at: new Date().toISOString()
-      };
-
-      if (supabaseClient) {
-        try {
-          const res1 = await supabaseClient.from('app_users').insert(newUserRecord);
-          if (res1.error) {
-            console.warn('Lưu app_users notice:', res1.error.message);
-          }
-          await supabaseClient.from('profiles').upsert({
-            id: userId,
-            email: email,
-            full_name: name,
-            password: password,
-            role: role,
-            created_at: new Date().toISOString()
-          });
-        } catch (dbErr) {
-          console.warn('Supabase insert notice:', dbErr);
-        }
-      }
-
-      // Lưu LocalStorage
-      localUsers.push(newUserRecord);
-      localStorage.setItem('iris_registered_users', JSON.stringify(localUsers));
-
-    } else {
-      // ==========================================
-      // ĐĂNG NHẬP TRỰC TIẾP (SO KHỚP EMAIL & MẬT KHẨU)
-      // ==========================================
-      let matched = null;
-
-      // Ưu tiên đặc biệt: Tài khoản Quản trị viên chuẩn admin@gmail.com / admin
-      if (email === 'admin@gmail.com' && password === 'admin') {
-        matched = {
-          id: '00000000-0000-0000-0000-000000000001',
-          name: 'Lê Thanh Thảo',
-          email: 'admin@gmail.com',
-          role: 'ADMIN'
-        };
-      }
-
-      // 1. Kiểm tra trên Supabase bảng app_users
-      if (!matched && supabaseClient) {
-        try {
-          const { data: dbUsers } = await supabaseClient.from('app_users').select('*').eq('email', email);
-          if (dbUsers && dbUsers.length > 0) {
-            if (dbUsers[0].password === password) {
-              matched = dbUsers[0];
-            } else {
-              if (errBox) {
-                errBox.style.display = 'block';
-                errBox.innerText = '⚠️ Mật khẩu không chính xác!';
-              }
-              if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = '🚀 Đăng nhập vào Hệ thống';
-              }
-              return;
-            }
-          }
-        } catch (e1) {}
-
-        // Kiểm tra trên profiles nếu app_users chưa có
-        if (!matched) {
-          try {
-            const { data: profUsers } = await supabaseClient.from('profiles').select('*').eq('email', email);
-            if (profUsers && profUsers.length > 0) {
-              const u = profUsers[0];
-              if (!u.password || u.password === password) {
-                matched = {
-                  id: u.id,
-                  name: u.full_name || email.split('@')[0],
-                  email: u.email,
-                  role: u.role || role
-                };
-              } else {
-                if (errBox) {
-                  errBox.style.display = 'block';
-                  errBox.innerText = '⚠️ Mật khẩu không chính xác!';
-                }
-                if (submitBtn) {
-                  submitBtn.disabled = false;
-                  submitBtn.innerText = '🚀 Đăng nhập vào Hệ thống';
-                }
-                return;
-              }
-            }
-          } catch (e2) {}
-        }
-      }
-
-      // 2. Kiểm tra trong LocalStorage nếu Supabase chưa có
-      if (!matched) {
-        const localUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
-        const found = localUsers.find(u => u.email.toLowerCase() === email);
-        if (found) {
-          if (found.password && found.password !== password) {
-            if (errBox) {
-              errBox.style.display = 'block';
-              errBox.innerText = '⚠️ Mật khẩu không chính xác!';
-            }
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.innerText = '🚀 Đăng nhập vào Hệ thống';
-            }
-            return;
-          }
-          matched = found;
-        }
-      }
-
-      // 3. Nếu không tìm thấy
-      if (!matched) {
-        if (errBox) {
-          errBox.style.display = 'block';
-          errBox.innerText = '⚠️ Tài khoản này chưa được đăng ký. Vui lòng chuyển sang tab "Đăng ký"!';
-        }
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerText = '🚀 Đăng nhập vào Hệ thống';
-        }
-        return;
-      }
-
-      userId = matched.id || ('u_' + Date.now());
-      name = matched.name || matched.full_name || email.split('@')[0];
-      role = matched.role || role;
-    }
-  } catch (err) {
-    console.warn('Lỗi đăng nhập/đăng ký:', err);
-  }
-
-  // Cập nhật User Session
   currentUser = {
     id: userId,
     email: email,
@@ -2845,165 +2503,45 @@ window.handleGateAuthSubmit = async function(e) {
   };
   localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
 
-  // Lưu danh sách người dùng
   const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
   if (!registeredUsers.some(u => u.email === currentUser.email)) {
     registeredUsers.push(currentUser);
     localStorage.setItem('iris_registered_users', JSON.stringify(registeredUsers));
   }
 
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.innerText = '🚀 Thành công!';
-  }
+  // Hiển thị thông báo thành công
+  if (successBox) successBox.style.display = 'flex';
+  if (submitBtn) submitBtn.disabled = true;
 
-  // Mở khóa giao diện
-  updateUserUI();
-  loadUserData();
-  
-  const gate = document.getElementById('authGateScreen');
-  if (gate) gate.classList.add('hidden');
-
-  // Mở modal hướng dẫn
+  // NGOẠI LỆ 1B: Sau khi đăng nhập thành công, hiệu ứng ngắn 600-800ms -> TỰ ĐỘNG mở modal Giới thiệu & Hướng dẫn trên nền Trang chủ
   setTimeout(() => {
+    const gate = document.getElementById('authGateScreen');
+    if (gate) gate.classList.add('hidden');
+    updateUserUI();
+    loadUserData();
+    window.showPage('homePage', document.getElementById('navHome'), 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine');
     window.openGuideModal();
-  }, 250);
-};
-
-window.quickLoginGate = function(email, role) {
-  const isAdmin = role === 'ADMIN' || email === 'admin@gmail.com';
-  currentUser = {
-    id: isAdmin ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002',
-    email: isAdmin ? 'admin@gmail.com' : email,
-    name: isAdmin ? 'Lê Thanh Thảo (Admin)' : 'Sinh viên Nghiên cứu',
-    role: isAdmin ? 'ADMIN' : 'USER',
-    createdAt: new Date().toLocaleDateString('vi-VN')
-  };
-  localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
-
-  const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
-  if (!registeredUsers.some(u => u.email === currentUser.email)) {
-    registeredUsers.push(currentUser);
-    localStorage.setItem('iris_registered_users', JSON.stringify(registeredUsers));
-  }
-
-  updateUserUI();
-  loadUserData();
-
-  const gate = document.getElementById('authGateScreen');
-  if (gate) gate.classList.add('hidden');
-
-  // Bắt buộc: Thứ đầu tiên hiện ra khi đăng nhập tài khoản là "Giới thiệu và Hướng dẫn"
-  setTimeout(() => {
-    window.openGuideModal();
-  }, 250);
+  }, 700);
 };
 
 window.openAuthModal = function() {
-  document.getElementById('authModal').style.display = 'flex';
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('hidden'), modal.classList.add('flex');
+
   if (currentUser.id !== 'guest_user' && currentUser.email) {
-    document.getElementById('authLoggedInView').style.display = 'block';
-    document.getElementById('authLoggedOutView').style.display = 'none';
+    document.getElementById('authLoggedInView').classList.remove('hidden');
+    document.getElementById('authLoggedOutView').classList.add('hidden');
     document.getElementById('modalUserEmail').innerText = currentUser.email;
-    document.getElementById('modalUserRole').innerHTML = `<span class="role-badge ${currentUser.role.toLowerCase()}">${currentUser.role}</span>`;
+    document.getElementById('modalUserRole').innerHTML = `<span class="text-xs px-2.5 py-0.5 rounded-full uppercase font-bold ${currentUser.role === 'ADMIN' ? 'bg-[#f2c14e]/30 text-[#f2c14e]' : 'bg-white/20 text-white'}">${currentUser.role}</span>`;
   } else {
-    document.getElementById('authLoggedInView').style.display = 'none';
-    document.getElementById('authLoggedOutView').style.display = 'block';
+    document.getElementById('authLoggedInView').classList.add('hidden');
+    document.getElementById('authLoggedOutView').classList.remove('hidden');
   }
 };
 
 window.closeAuthModal = function() {
-  document.getElementById('authModal').style.display = 'none';
-};
-
-window.switchAuthTab = function(tab) {
-  document.getElementById('tabSignIn').classList.toggle('active', tab === 'signin');
-  document.getElementById('tabSignUp').classList.toggle('active', tab === 'signup');
-  document.getElementById('authSubmitBtn').innerText = tab === 'signin' ? 'Đăng nhập' : 'Đăng ký tài khoản';
-};
-
-window.handleAuthSubmit = async function(e) {
-  e.preventDefault();
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const role = (email.toLowerCase().includes('admin') || email.toLowerCase() === 'huylechill@gmail.com') ? 'ADMIN' : 'USER';
-  let userId = 'u_' + Date.now();
-
-  if (password && password.length < 6) {
-    alert('Mật khẩu Supabase yêu cầu tối thiểu 6 ký tự!');
-    return;
-  }
-
-  try {
-    if (supabaseClient && supabaseClient.auth && email && password) {
-      const isSignUp = document.getElementById('tabSignUp').classList.contains('active');
-      if (isSignUp) {
-        const { data, error } = await supabaseClient.auth.signUp({
-          email,
-          password,
-          options: { data: { role, full_name: email.split('@')[0] } }
-        });
-        if (data && data.user) userId = data.user.id;
-        if (error && !error.message.includes('already registered')) {
-          console.warn('Supabase Signup warning:', error.message);
-        }
-      } else {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (data && data.user) userId = data.user.id;
-        if (error) {
-          console.warn('Supabase Signin notice:', error.message);
-        }
-      }
-    }
-  } catch (err) {
-    console.warn(err);
-  }
-
-  currentUser = {
-    id: userId,
-    email: email,
-    name: email.split('@')[0],
-    role: role,
-    createdAt: new Date().toLocaleDateString('vi-VN')
-  };
-  localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
-  
-  const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
-  if (!registeredUsers.some(u => u.email === currentUser.email)) {
-    registeredUsers.push(currentUser);
-    localStorage.setItem('iris_registered_users', JSON.stringify(registeredUsers));
-  }
-
-  updateUserUI();
-  loadUserData();
-  closeAuthModal();
-  setTimeout(() => {
-    window.openGuideModal();
-  }, 250);
-};
-
-window.quickLoginDemo = function(email, role) {
-  currentUser = {
-    id: role === 'ADMIN' ? 'admin_01' : 'user_01',
-    email: email,
-    name: role === 'ADMIN' ? 'Quản trị viên' : 'Sinh viên Nghiên cứu',
-    role: role,
-    createdAt: new Date().toLocaleDateString('vi-VN')
-  };
-  localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
-  updateUserUI();
-  loadUserData();
-  closeAuthModal();
-  setTimeout(() => {
-    window.openGuideModal();
-  }, 250);
-};
-
-window.switchRole = function(newRole) {
-  currentUser.role = newRole;
-  localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
-  updateUserUI();
-  closeAuthModal();
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.add('hidden'), modal.classList.remove('flex');
 };
 
 window.handleLogout = async function() {
@@ -3013,32 +2551,25 @@ window.handleLogout = async function() {
   currentUser = {
     id: 'guest_user',
     email: '',
-    name: '',
+    name: 'Khách',
     role: 'USER'
   };
   localStorage.removeItem('iris_active_user');
   updateUserUI();
-  loadUserData();
-  closeAuthModal();
-  
-  // Trở về màn hình đăng nhập
+  window.closeAuthModal();
+
   const gate = document.getElementById('authGateScreen');
   if (gate) gate.classList.remove('hidden');
 };
 
-// 14. FLOATING GUIDE BUBBLE MODAL CONTROLLER (BÓNG THÔNG BÁO NỔI MƯỢT MÀ)
 window.openGuideModal = function() {
   const modal = document.getElementById('guideBubbleModal');
-  if (modal) {
-    modal.classList.add('active');
-  }
+  if (modal) modal.classList.remove('hidden'), modal.classList.add('flex');
 };
 
 window.closeGuideModal = function() {
   const modal = document.getElementById('guideBubbleModal');
-  if (modal) {
-    modal.classList.remove('active');
-  }
+  if (modal) modal.classList.add('hidden'), modal.classList.remove('flex');
 };
 
 window.handleGuideBackdropClick = function(e) {
@@ -3047,9 +2578,52 @@ window.handleGuideBackdropClick = function(e) {
   }
 };
 
-// 15. INITIALIZATION ON DOM READY
+// =====================================================================
+// 15. SPOTLIGHT & MOUSE REVEAL TRÊN HERO
+// =====================================================================
+function initHeroSpotlight() {
+  const hero = document.getElementById('heroContainer');
+  const spotlight = document.getElementById('heroSpotlight');
+  if (!hero || !spotlight) return;
+
+  hero.addEventListener('mousemove', (e) => {
+    const rect = hero.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    spotlight.style.opacity = '1';
+    spotlight.style.maskImage = `radial-gradient(circle 240px at ${x}px ${y}px, black 35%, transparent 100%)`;
+    spotlight.style.webkitMaskImage = `radial-gradient(circle 240px at ${x}px ${y}px, black 35%, transparent 100%)`;
+  });
+
+  hero.addEventListener('mouseleave', () => {
+    spotlight.style.opacity = '0';
+  });
+}
+
+// Kiểm tra API Health Check thật
+async function checkApiHealth() {
+  const dot = document.getElementById('apiStatusDot');
+  const text = document.getElementById('apiStatusText');
+  try {
+    const res = await fetch('/health', { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+      if (text) text.innerText = 'API Online';
+    } else {
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+      if (text) text.innerText = 'API Degraded';
+    }
+  } catch (e) {
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+    if (text) text.innerText = 'SVM Local Active';
+  }
+}
+
+// =====================================================================
+// 16. KHỞI TẠO DOM READY
+// =====================================================================
 window.addEventListener('DOMContentLoaded', () => {
   initUserSession();
-  trainAndRenderBoundary();
-  generateRandomSample();
+  initHeroSpotlight();
+  checkApiHealth();
 });
