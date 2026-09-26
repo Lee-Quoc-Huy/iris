@@ -358,7 +358,6 @@ function initUserSession() {
   }
 
   setupSupabaseRealtime();
-  loadAdminAvatar();
 
   if (hasValidSession) {
     if (gate) gate.classList.add('hidden');
@@ -538,7 +537,7 @@ window.showPage = function(pageId, button, titleText, subText) {
       setTimeout(() => {
         if (guessChartInstance) {
           guessChartInstance.resize();
-          renderGuessScatterChart();
+          renderGuessChart(currentGuessSample);
         }
       }, 60);
     }
@@ -2121,6 +2120,9 @@ function renderGuessChart(sampleObj) {
   }
 }
 
+window.renderGuessChart = renderGuessChart;
+window.renderGuessScatterChart = renderGuessChart;
+
 window.selectGuess = function(species, btn) {
   selectedGuess = species;
 
@@ -3009,169 +3011,6 @@ function initHeroSpotlight() {
   hero.addEventListener('mouseleave', () => {
     spotlight.style.opacity = '0';
   });
-}
-
-// =====================================================================
-// 15.5. TẢI VÀ ĐỒNG BỘ ẢNH ĐẠI DIỆN ADMIN (LƯU SUPABASE THEO ID/EMAIL ADMIN)
-// =====================================================================
-window.handleAdminAvatarUpload = async function(event) {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-
-  const statusEl = document.getElementById('adminAvatarUploadStatus');
-  if (statusEl) {
-    statusEl.innerText = '⏳ Đang xử lý & lưu ảnh vào CSDL Supabase...';
-    statusEl.classList.remove('hidden');
-    statusEl.className = 'text-[11px] text-[#f2c14e] font-medium flex items-center gap-1 mt-1 bg-white/[0.05] border border-white/10 px-2.5 py-1 rounded-lg';
-  }
-
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    const rawDataUrl = e.target.result;
-
-    // Tự động tối ưu/resize ảnh về kích thước tối đa 900px để Base64 nhẹ và nạp siêu nhanh
-    const img = new Image();
-    img.onload = async function() {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      const maxDim = 900;
-
-      if (width > maxDim || height > maxDim) {
-        if (width > height) {
-          height = Math.round((height * maxDim) / width);
-          width = maxDim;
-        } else {
-          width = Math.round((width * maxDim) / height);
-          height = maxDim;
-        }
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.88);
-
-      // 1. Cập nhật ngay lập tức giao diện người dùng
-      applyAdminAvatar(optimizedBase64);
-
-      // 2. Lưu vào localStorage
-      try {
-        localStorage.setItem('iris_admin_avatar', optimizedBase64);
-      } catch (storageErr) {
-        console.warn('LocalStorage limit:', storageErr);
-      }
-
-      // 3. Lưu vào CSDL Supabase dưới ID và Email của Admin
-      let savedToDb = false;
-      if (supabaseClient) {
-        try {
-          const adminId = '00000000-0000-0000-0000-000000000001';
-          const adminEmail = 'lethao8130@gmail.com';
-
-          // A. Cập nhật bảng profiles
-          await supabaseClient
-            .from('profiles')
-            .upsert({
-              id: adminId,
-              email: adminEmail,
-              full_name: 'Lê Thanh Thảo',
-              role: 'ADMIN',
-              avatar_url: optimizedBase64,
-              updated_at: new Date().toISOString()
-            });
-
-          // B. Cập nhật bảng app_users nếu có
-          try {
-            await supabaseClient
-              .from('app_users')
-              .update({ avatar_url: optimizedBase64 })
-              .or(`id.eq.${adminId},email.eq.${adminEmail}`);
-          } catch (uErr) {}
-
-          // C. Lưu vào bảng app_content key 'admin_avatar'
-          try {
-            await supabaseClient
-              .from('app_content')
-              .upsert({
-                key: 'admin_avatar',
-                title: 'Admin Avatar Base64',
-                content: optimizedBase64,
-                updated_at: new Date().toISOString()
-              });
-          } catch (cErr) {}
-
-          savedToDb = true;
-        } catch (dbErr) {
-          console.warn('Lỗi lưu ảnh vào Supabase:', dbErr);
-        }
-      }
-
-      if (statusEl) {
-        statusEl.innerText = savedToDb
-          ? '✅ Đã lưu ảnh đại diện Admin vào Supabase CSDL thành công!'
-          : '✅ Đã cập nhật ảnh đại diện Admin!';
-        statusEl.className = 'text-[11px] text-emerald-400 font-medium flex items-center gap-1 mt-1 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg';
-        setTimeout(() => {
-          if (statusEl) statusEl.classList.add('hidden');
-        }, 4500);
-      }
-    };
-    img.src = rawDataUrl;
-  };
-  reader.readAsDataURL(file);
-};
-
-function applyAdminAvatar(urlOrBase64) {
-  if (!urlOrBase64) return;
-  const imgEl = document.getElementById('adminGuideAvatarImg');
-  if (imgEl) {
-    imgEl.src = urlOrBase64;
-  }
-}
-
-async function loadAdminAvatar() {
-  // 1. Nạp từ localStorage trước để hiển thị không trễ
-  try {
-    const saved = localStorage.getItem('iris_admin_avatar');
-    if (saved) {
-      applyAdminAvatar(saved);
-    }
-  } catch (e) {}
-
-  // 2. Nạp từ CSDL Supabase
-  if (supabaseClient) {
-    try {
-      // Ưu tiên đọc từ app_content key = 'admin_avatar'
-      const { data: contentData } = await supabaseClient
-        .from('app_content')
-        .select('content')
-        .eq('key', 'admin_avatar')
-        .maybeSingle();
-
-      if (contentData && contentData.content) {
-        applyAdminAvatar(contentData.content);
-        try { localStorage.setItem('iris_admin_avatar', contentData.content); } catch (e) {}
-        return;
-      }
-
-      // Đọc từ bảng profiles của admin
-      const { data: profileData } = await supabaseClient
-        .from('profiles')
-        .select('avatar_url')
-        .eq('email', 'lethao8130@gmail.com')
-        .maybeSingle();
-
-      if (profileData && profileData.avatar_url) {
-        applyAdminAvatar(profileData.avatar_url);
-        try { localStorage.setItem('iris_admin_avatar', profileData.avatar_url); } catch (e) {}
-      }
-    } catch (err) {
-      console.warn('Không thể nạp avatar admin từ Supabase:', err);
-    }
-  }
 }
 
 // Kiểm tra API & Supabase Health Check thật
