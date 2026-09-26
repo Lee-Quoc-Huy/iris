@@ -365,6 +365,7 @@ function initUserSession() {
     loadUserData();
   } else {
     if (gate) gate.classList.remove('hidden');
+    resetGateAuthForm(false);
     // Vẫn tải dữ liệu thí nghiệm hệ thống từ Supabase để sẵn sàng
     loadUserData();
   }
@@ -2726,36 +2727,99 @@ async function renderAdminStats() {
 // =====================================================================
 // 14. AUTH GATE & MODALS (NGOẠI LỆ 1B & YÊU CẦU II.1 - SUPABASE AUTH)
 // =====================================================================
+function resetGateAuthForm(keepEmail = false) {
+  const errBox = document.getElementById('gateAuthError');
+  const successBox = document.getElementById('gateAuthSuccess');
+  const submitBtn = document.getElementById('gateSubmitBtn');
+  const passwordInput = document.getElementById('gatePasswordInput');
+  const nameInput = document.getElementById('gateNameInput');
+  const emailInput = document.getElementById('gateEmailInput');
+
+  if (errBox) {
+    errBox.style.display = 'none';
+    errBox.innerText = '';
+  }
+  if (successBox) {
+    successBox.style.display = 'none';
+  }
+  if (passwordInput) {
+    passwordInput.value = '';
+  }
+  if (!keepEmail && emailInput) {
+    emailInput.value = '';
+  }
+  if (nameInput) {
+    nameInput.value = '';
+  }
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    const isSignUp = document.getElementById('gateNameRow')?.style.display === 'block';
+    submitBtn.innerText = isSignUp ? 'Tạo tài khoản mới' : 'Đăng nhập vào Hệ thống';
+  }
+}
+window.resetGateAuthForm = resetGateAuthForm;
+
 window.switchGateAuthTab = function(tab) {
   const isSignIn = tab === 'signin';
-  document.getElementById('gateTabSignIn').className = isSignIn
-    ? 'flex-1 py-2 text-xs font-semibold rounded-full transition-all bg-white text-gray-900 shadow'
-    : 'flex-1 py-2 text-xs font-semibold rounded-full transition-all text-white/70 hover:text-white';
+  const tabSignIn = document.getElementById('gateTabSignIn');
+  const tabSignUp = document.getElementById('gateTabSignUp');
+  const nameRow = document.getElementById('gateNameRow');
+  const submitBtn = document.getElementById('gateSubmitBtn');
+  const errBox = document.getElementById('gateAuthError');
+  const successBox = document.getElementById('gateAuthSuccess');
 
-  document.getElementById('gateTabSignUp').className = !isSignIn
-    ? 'flex-1 py-2 text-xs font-semibold rounded-full transition-all bg-white text-gray-900 shadow'
-    : 'flex-1 py-2 text-xs font-semibold rounded-full transition-all text-white/70 hover:text-white';
+  if (tabSignIn) {
+    tabSignIn.className = isSignIn
+      ? 'flex-1 py-2 text-xs font-semibold rounded-full transition-all bg-white text-gray-900 shadow'
+      : 'flex-1 py-2 text-xs font-semibold rounded-full transition-all text-white/70 hover:text-white';
+  }
 
-  document.getElementById('gateNameRow').style.display = isSignIn ? 'none' : 'block';
-  document.getElementById('gateSubmitBtn').innerText = isSignIn ? 'Đăng nhập vào Hệ thống' : 'Tạo tài khoản mới';
+  if (tabSignUp) {
+    tabSignUp.className = !isSignIn
+      ? 'flex-1 py-2 text-xs font-semibold rounded-full transition-all bg-white text-gray-900 shadow'
+      : 'flex-1 py-2 text-xs font-semibold rounded-full transition-all text-white/70 hover:text-white';
+  }
+
+  if (nameRow) nameRow.style.display = isSignIn ? 'none' : 'block';
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.innerText = isSignIn ? 'Đăng nhập vào Hệ thống' : 'Tạo tài khoản mới';
+  }
+  if (errBox) {
+    errBox.style.display = 'none';
+    errBox.innerText = '';
+  }
+  if (successBox) {
+    successBox.style.display = 'none';
+  }
 };
 
 window.handleGateAuthSubmit = async function(e) {
   e.preventDefault();
-  const email = document.getElementById('gateEmailInput').value.trim();
-  const password = document.getElementById('gatePasswordInput').value;
+  const email = document.getElementById('gateEmailInput')?.value.trim() || '';
+  const password = document.getElementById('gatePasswordInput')?.value || '';
   const name = document.getElementById('gateNameInput')?.value.trim() || email.split('@')[0];
-  const isSignUp = document.getElementById('gateNameRow').style.display === 'block';
+  const isSignUp = document.getElementById('gateNameRow')?.style.display === 'block';
   const errBox = document.getElementById('gateAuthError');
   const successBox = document.getElementById('gateAuthSuccess');
   const submitBtn = document.getElementById('gateSubmitBtn');
 
-  if (errBox) errBox.style.display = 'none';
+  if (errBox) {
+    errBox.style.display = 'none';
+    errBox.innerText = '';
+  }
+  if (successBox) {
+    successBox.style.display = 'none';
+  }
 
   if (!email || !password) {
     if (errBox) {
       errBox.style.display = 'block';
       errBox.innerText = '⚠️ Vui lòng nhập đầy đủ Email và Mật khẩu!';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = isSignUp ? 'Tạo tài khoản mới' : 'Đăng nhập vào Hệ thống';
     }
     return;
   }
@@ -2764,6 +2828,10 @@ window.handleGateAuthSubmit = async function(e) {
     if (errBox) {
       errBox.style.display = 'block';
       errBox.innerText = '⚠️ Mật khẩu yêu cầu tối thiểu 5 ký tự!';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = isSignUp ? 'Tạo tài khoản mới' : 'Đăng nhập vào Hệ thống';
     }
     return;
   }
@@ -2911,13 +2979,23 @@ window.handleGateAuthSubmit = async function(e) {
     }
 
     // Hiển thị thông báo thành công
-    if (successBox) successBox.style.display = 'flex';
-    if (submitBtn) submitBtn.disabled = true;
+    if (successBox) {
+      successBox.style.display = 'flex';
+      successBox.innerHTML = `<span>✓</span> <span>Đăng nhập thành công! Đang chuyển hướng...</span>`;
+    }
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = '✓ Thành công';
+    }
 
     // NGOẠI LỆ 1B: Sau khi đăng nhập thành công, hiệu ứng ngắn 600-800ms -> TỰ ĐỘNG mở modal Giới thiệu & Hướng dẫn trên nền Trang chủ
     setTimeout(() => {
       const gate = document.getElementById('authGateScreen');
       if (gate) gate.classList.add('hidden');
+      
+      // Reset form để sẵn sàng cho lần đăng xuất/đăng nhập kế tiếp
+      resetGateAuthForm(true);
+
       updateUserUI();
       loadUserData();
       window.showPage('homePage', document.getElementById('navHome'), 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine');
@@ -2971,8 +3049,14 @@ window.handleLogout = async function() {
   updateUserUI();
   window.closeAuthModal();
 
+  // Reset form và trạng thái nút bấm để người dùng có thể đăng nhập lại ngay lập tức
+  resetGateAuthForm(false);
+  window.switchGateAuthTab('signin');
+
   const gate = document.getElementById('authGateScreen');
-  if (gate) gate.classList.remove('hidden');
+  if (gate) {
+    gate.classList.remove('hidden');
+  }
 };
 
 window.openGuideModal = function() {
