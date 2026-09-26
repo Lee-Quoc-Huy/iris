@@ -3110,17 +3110,32 @@ async function checkApiHealth() {
       } catch (e) {}
     }
 
-    const res = await fetch('/health', { signal: AbortSignal.timeout(3000) });
-    if (res.ok) {
-      if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-      if (text) text.innerText = isSupabaseOnline ? 'API & Supabase Online' : 'API Online';
-    } else {
-      if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-      if (text) text.innerText = isSupabaseOnline ? 'Supabase Connected' : 'SVM Local Active';
+    // Kiểm tra kết nối /health (có fallback file tĩnh /health và /health.json)
+    let isApiOnline = false;
+    try {
+      const res = await fetch('/health', { signal: AbortSignal.timeout(2500) });
+      if (res.ok) isApiOnline = true;
+    } catch (e) {}
+
+    if (dot) {
+      dot.className = isSupabaseOnline || isApiOnline
+        ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse'
+        : 'w-2 h-2 rounded-full bg-emerald-400';
+    }
+    if (text) {
+      if (isApiOnline && isSupabaseOnline) {
+        text.innerText = 'API & Supabase Online';
+      } else if (isSupabaseOnline) {
+        text.innerText = 'Supabase Connected';
+      } else if (isApiOnline) {
+        text.innerText = 'API Online';
+      } else {
+        text.innerText = 'SVM Local Active';
+      }
     }
   } catch (e) {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-    if (text) text.innerText = 'Supabase & SVM Active';
+    if (text) text.innerText = 'Supabase Connected';
   }
 }
 

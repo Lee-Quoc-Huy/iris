@@ -9,6 +9,10 @@
     <meta property="og:title" content="Iris SVM - Phân loại & Trực quan hóa hoa Iris" />
     <meta property="og:description" content="Hệ thống phân loại hoa Iris bằng mô hình SVM với Trực quan hóa Decision Boundary, Thử thách Đoán hoa, Model Benchmark và Quản lý dữ liệu phân quyền." />
 
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+
     <!-- Google Fonts & Stylesheet -->
     <link rel="stylesheet" href="/src/index.css" />
 
@@ -39,7 +43,7 @@
                         <span>✨</span> Nền tảng Học máy SVM
                     </div>
                     <h2 class="text-3xl font-playfair font-normal leading-tight text-white mb-2">
-                        Khu vườn Hoàng hôn & Siêu phẳng SVM
+                        Khu vườn Iris — nơi SVM tìm ra ranh giới.
                     </h2>
                     <p class="text-sm text-white/70 max-w-sm font-sans leading-relaxed">
                         Phân loại chính xác 3 loài hoa Diên Vĩ theo các số đo hình học đài hoa & cánh hoa kinh điển của Ronald Fisher.
@@ -110,9 +114,9 @@
     </div>
 
     <!-- 2. FIXED TOP NAVIGATION BAR (FLOATING PILL GLASS) -->
-    <header class="fixed top-0 left-0 right-0 z-[100] px-4 sm:px-8 py-3.5 flex items-center justify-between pointer-events-none">
+    <header class="fixed top-0 left-0 right-0 z-[100] px-3 sm:px-6 py-3 flex items-center justify-between pointer-events-none gap-2">
         <!-- TRÁI: LOGO SVG + BRAND TEXT -> VỀ TRANG CHỦ -->
-        <div class="flex items-center gap-3 cursor-pointer pointer-events-auto group" onclick="showPage('homePage', null, 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine')">
+        <div class="flex items-center gap-2.5 cursor-pointer pointer-events-auto group shrink-0" onclick="showPage('homePage', null, 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine')">
             <div class="w-9 h-9 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:border-[#e8702a] transition-colors">
                 <svg class="w-5 h-5 text-white" viewBox="0 0 256 256" fill="currentColor">
                     <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z" />
@@ -122,47 +126,47 @@
         </div>
 
         <!-- GIỮA: FLOATING NAVIGATION PILL (DESKTOP) -->
-        <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-white/[0.12] backdrop-blur-xl border border-white/20 rounded-full p-1.5 items-center gap-1 shadow-2xl pointer-events-auto">
-            <button id="navHome" class="nav-tab-btn active px-3.5 py-1.5 rounded-full text-xs font-medium text-white transition-all hover:bg-white/20" onclick="showPage('homePage', this, 'Trang chủ', 'Khám phá thế giới hoa Iris và mô hình Support Vector Machine')">
+        <nav class="hidden lg:flex bg-white/[0.12] backdrop-blur-xl border border-white/20 rounded-full p-1 items-center gap-0.5 shadow-2xl pointer-events-auto shrink overflow-x-auto no-scrollbar max-w-[calc(100vw-360px)]">
+            <button id="navHome" class="nav-tab-btn active px-3 py-1.5 rounded-full text-xs font-medium text-white transition-all hover:bg-white/20 whitespace-nowrap" onclick="showPage('homePage', this, 'Trang chủ', 'Khám phá thế giới hoa Iris và mô hình Support Vector Machine')">
                 Trang chủ
             </button>
-            <button id="navPredict" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all" onclick="showPage('predictPage', this, 'Nhận diện & Huấn luyện SVM', 'Nhận diện phân loại tức thì và tự do điều chỉnh siêu tham số SVM.')">
+            <button id="navPredict" class="nav-tab-btn px-3 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('predictPage', this, 'Nhận diện & Huấn luyện SVM', 'Nhận diện phân loại tức thì và tự do điều chỉnh siêu tham số SVM.')">
                 Nhận diện
             </button>
-            <button id="navGuess" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all" onclick="showPage('guessPage', this, 'Thử thách: Bạn đoán trước SVM', 'Quan sát biểu đồ 2D và đoán loài hoa trước khi mô hình phân loại.')">
+            <button id="navGuess" class="nav-tab-btn px-3 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('guessPage', this, 'Thử thách: Bạn đoán trước SVM', 'Quan sát biểu đồ 2D và đoán loài hoa trước khi mô hình phân loại.')">
                 Đoán hoa
             </button>
-            <button id="navFile" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all" onclick="showPage('filePage', this, 'Phân tích tập dữ liệu', 'Tải tệp tin CSV, XLSX, XLS hoặc TXT để SVM phân loại hàng loạt.')">
+            <button id="navFile" class="nav-tab-btn px-3 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('filePage', this, 'Phân tích tập dữ liệu', 'Tải tệp tin CSV, XLSX, XLS hoặc TXT để SVM phân loại hàng loạt.')">
                 Phân tích dữ liệu
             </button>
-            <button id="navBenchmark" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all" onclick="showPage('benchmarkPage', this, 'Model Benchmark', 'Bảng so sánh thực tế các mô hình & Kernel từ lịch sử huấn luyện của tài khoản.')">
+            <button id="navBenchmark" class="nav-tab-btn px-3 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('benchmarkPage', this, 'Model Benchmark', 'Bảng so sánh thực tế các mô hình & Kernel từ lịch sử huấn luyện của tài khoản.')">
                 Model Benchmark
             </button>
-            <button id="navHistory" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all" onclick="showPage('historyPage', this, 'Lịch sử nhận diện', 'Nhật ký các lần nhận diện của tài khoản hiện tại.')">
+            <button id="navHistory" class="nav-tab-btn px-3 py-1.5 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('historyPage', this, 'Lịch sử nhận diện', 'Nhật ký các lần nhận diện của tài khoản hiện tại.')">
                 Lịch sử nhận diện
             </button>
 
             <!-- TABS ADMIN CHỈ HIỆN KHI ROLE == ADMIN -->
-            <div id="adminNavPillSection" class="hidden items-center gap-1 border-l border-white/20 pl-1 ml-0.5">
-                <button id="navAdminExperiments" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-[#f2c14e] hover:bg-white/20 transition-all" onclick="showPage('adminExperimentsPage', this, 'Lịch sử Thí nghiệm Toàn hệ thống', 'Xem toàn bộ kết quả huấn luyện SVM của tất cả người dùng trong database.')" title="Dành cho Quản trị viên">
+            <div id="adminNavPillSection" class="hidden items-center gap-0.5 border-l border-white/20 pl-1 ml-0.5">
+                <button id="navAdminExperiments" class="nav-tab-btn px-2.5 py-1.5 rounded-full text-xs font-medium text-[#f2c14e] hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('adminExperimentsPage', this, 'Lịch sử Thí nghiệm Toàn hệ thống', 'Xem toàn bộ kết quả huấn luyện SVM của tất cả người dùng trong database.')" title="Dành cho Quản trị viên">
                     Thí nghiệm toàn hệ thống
                 </button>
-                <button id="navAdminManage" class="nav-tab-btn px-3.5 py-1.5 rounded-full text-xs font-medium text-[#f2c14e] hover:bg-white/20 transition-all" onclick="showPage('adminManagePage', this, 'Quản trị & Thống kê hệ thống', 'Quản lý người dùng, thống kê lượt dùng model và nội dung website.')" title="Dành cho Quản trị viên">
+                <button id="navAdminManage" class="nav-tab-btn px-2.5 py-1.5 rounded-full text-xs font-medium text-[#f2c14e] hover:bg-white/20 transition-all whitespace-nowrap" onclick="showPage('adminManagePage', this, 'Quản trị & Thống kê hệ thống', 'Quản lý người dùng, thống kê lượt dùng model và nội dung website.')" title="Dành cho Quản trị viên">
                     Quản trị & Thống kê
                 </button>
             </div>
         </nav>
 
         <!-- PHẢI: API BADGE + HƯỚNG DẪN + TÀI KHOẢN -->
-        <div class="flex items-center gap-2.5 pointer-events-auto">
-            <!-- API BADGE -->
-            <div id="apiStatusBadge" class="hidden sm:flex items-center gap-2 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1.5 text-xs text-white/90">
+        <div class="flex items-center gap-2 pointer-events-auto shrink-0">
+            <!-- API BADGE (COMPACT ON LAPTOPS) -->
+            <div id="apiStatusBadge" class="hidden xl:flex items-center gap-1.5 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 text-xs text-white/90">
                 <span id="apiStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span id="apiStatusText" class="font-medium text-[11.5px]">API Online</span>
+                <span id="apiStatusText" class="font-medium text-[11px] whitespace-nowrap">Supabase Connected</span>
             </div>
 
             <!-- NÚT GIỚI THIỆU & HƯỚNG DẪN -->
-            <button type="button" onclick="openGuideModal()" class="w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 text-white/90 flex items-center justify-center text-sm transition-all" title="Giới thiệu & Hướng dẫn">
+            <button type="button" onclick="openGuideModal()" class="w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 text-white/90 flex items-center justify-center text-sm transition-all shrink-0" title="Giới thiệu & Hướng dẫn">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M12 16v-4"></path>
@@ -171,16 +175,16 @@
             </button>
 
             <!-- NÚT TÀI KHOẢN / USER PILL -->
-            <button id="userProfileBtn" type="button" onclick="openAuthModal()" class="flex items-center gap-2 bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 rounded-full pl-2 pr-3 py-1.5 transition-all text-left">
+            <button id="userProfileBtn" type="button" onclick="openAuthModal()" class="flex items-center gap-2 bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 rounded-full pl-2 pr-3 py-1.5 transition-all text-left shrink-0">
                 <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-[#e8702a] to-[#f2c14e] flex items-center justify-center text-xs font-bold text-black">
                     👤
                 </div>
-                <span id="userDisplayName" class="text-xs font-medium text-white max-w-[100px] truncate">Khách</span>
+                <span id="userDisplayName" class="text-xs font-medium text-white max-w-[90px] truncate">Khách</span>
                 <span id="userRoleBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white uppercase">User</span>
             </button>
 
             <!-- MOBILE HAMBURGER BUTTON -->
-            <button type="button" onclick="toggleMobileNav()" class="md:hidden w-9 h-9 rounded-full bg-white/[0.08] border border-white/20 flex items-center justify-center text-white">
+            <button type="button" onclick="toggleMobileNav()" class="lg:hidden w-9 h-9 rounded-full bg-white/[0.08] border border-white/20 flex items-center justify-center text-white shrink-0">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="3" y1="12" x2="21" y2="12"></line>
                     <line x1="3" y1="6" x2="21" y2="6"></line>
