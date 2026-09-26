@@ -782,31 +782,47 @@ function trainAndRenderBoundary(shouldSaveHistory = false) {
   ]);
   const y_all = ACTIVE_IRIS_DATASET.map(d => d[4]);
 
+  // Phân chia Stratified 80/20 Train/Test split (120 train / 30 test) để kiểm thử mô hình thực tế
+  const trainX = [], trainY = [];
+  const testX = [], testY = [];
+  X_4D.forEach((sample, idx) => {
+    const classIdx = y_all[idx];
+    const offsetInClass = idx % 50;
+    if (offsetInClass >= 40) { // 20% mẫu kiểm thử (10 mẫu mỗi lớp)
+      testX.push(sample);
+      testY.push(classIdx);
+    } else { // 80% mẫu huấn luyện (40 mẫu mỗi lớp)
+      trainX.push(sample);
+      trainY.push(classIdx);
+    }
+  });
+
   const coef0 = (kernel === 'poly') ? 1.0 : 0.0;
-  const multiSVM = trainMultiClassSVM(X_4D, y_all, C, kernel, gamma, degree, coef0);
+  // Huấn luyện trên tập Train (80%)
+  const multiSVM = trainMultiClassSVM(trainX, trainY, C, kernel, gamma, degree, coef0);
   currentTrainedSVM = multiSVM;
 
   const endTime = performance.now();
   const execTime = +(endTime - startTime).toFixed(2);
 
-  // Đánh giá Confusion Matrix
-  let correct = 0;
+  // Đánh giá chỉ số kiểm thử thực tế trên 30 mẫu kiểm thử unseen (Test Set)
+  let testCorrect = 0;
   const confusion = [[0,0,0],[0,0,0],[0,0,0]];
-  X_4D.forEach((x4, i) => {
+  testX.forEach((x4, i) => {
     const pred = multiSVM.predictSample(x4).classIndex;
-    const trueC = y_all[i];
+    const trueC = testY[i];
     confusion[trueC][pred]++;
-    if (pred === trueC) correct++;
+    if (pred === trueC) testCorrect++;
   });
-  const accuracy = +((correct / X_4D.length) * 100).toFixed(1);
+  const accuracy = +((testCorrect / testX.length) * 100).toFixed(1);
 
   let sumP = 0, sumR = 0;
   for (let c = 0; c < 3; c++) {
     const tp = confusion[c][c];
     const totalPred = confusion[0][c] + confusion[1][c] + confusion[2][c];
     const totalActual = confusion[c][0] + confusion[c][1] + confusion[c][2];
-    sumP += totalPred > 0 ? (tp / totalPred) : 1.0;
-    sumR += totalActual > 0 ? (tp / totalActual) : 1.0;
+    sumP += totalPred > 0 ? (tp / totalPred) : 0;
+    sumR += totalActual > 0 ? (tp / totalActual) : 0;
   }
   const precision = +(sumP / 3).toFixed(3);
   const recall = +(sumR / 3).toFixed(3);
@@ -1584,6 +1600,10 @@ function renderBenchmarkTable() {
     const kernelName = (r.kernel || 'linear').toUpperCase();
     const isHighest = parseFloat(r.accuracy) === maxAcc && maxAcc > 0;
 
+    const precDisplay = typeof r.precision === 'number' ? (r.precision <= 1 ? r.precision.toFixed(3) : r.precision) : (r.precision || '0.967');
+    const recallDisplay = typeof r.recall === 'number' ? (r.recall <= 1 ? r.recall.toFixed(3) : r.recall) : (r.recall || '0.967');
+    const f1Display = typeof r.f1 === 'number' ? (r.f1 <= 1 ? r.f1.toFixed(3) : r.f1) : (r.f1 || '0.967');
+
     html += `
       <tr class="hover:bg-white/[0.04] transition-colors border-l-2 ${kernelName === 'RBF' ? 'border-l-[#e8702a]' : 'border-l-transparent'}">
         <td class="py-3 px-4">
@@ -1595,14 +1615,14 @@ function renderBenchmarkTable() {
         <td class="py-3 px-4 font-mono text-[11px] text-white/70">
           SL:${sl} SW:${sw} PL:${pl} PW:${pw}
         </td>
-        <td class="py-3 px-3 text-center text-white/80">${r.precision ?? '0.967'}</td>
+        <td class="py-3 px-3 text-center text-white/80">${precDisplay}</td>
         <td class="py-3 px-3 text-center">
           <span class="inline-flex items-center gap-1 font-bold ${isHighest ? 'text-[#f2c14e]' : 'text-emerald-400'}">
             ${r.accuracy}% ${isHighest ? '<span class="text-[9px] px-1.5 py-0.2 rounded-full bg-[#f2c14e]/20 border border-[#f2c14e]/40">Cao nhất</span>' : ''}
           </span>
         </td>
-        <td class="py-3 px-3 text-center text-white/80">${r.f1 ?? '0.967'}</td>
-        <td class="py-3 px-3 text-center text-white/80">${r.recall ?? '0.967'}</td>
+        <td class="py-3 px-3 text-center text-white/80">${f1Display}</td>
+        <td class="py-3 px-3 text-center text-white/80">${recallDisplay}</td>
         <td class="py-3 px-3 text-center text-white/70">${r.execTime ?? 1} ms</td>
         <td class="py-3 px-3 text-center">
           <button type="button" class="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded-full hover:bg-red-500/10" onclick="deleteBenchmarkItem('${r.id}')">

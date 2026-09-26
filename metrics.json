@@ -12,8 +12,8 @@
             11,
             9
         ],
-        "train_time_ms": 1.43,
-        "pred_time_ms": 0.23,
+        "train_time_ms": 1.36,
+        "pred_time_ms": 0.22,
         "confusion_matrix": [
             [
                 10,
@@ -45,8 +45,8 @@
             23,
             21
         ],
-        "train_time_ms": 1.19,
-        "pred_time_ms": 0.23,
+        "train_time_ms": 1.13,
+        "pred_time_ms": 0.22,
         "confusion_matrix": [
             [
                 10,
@@ -78,8 +78,8 @@
             6,
             6
         ],
-        "train_time_ms": 1.17,
-        "pred_time_ms": 0.17,
+        "train_time_ms": 0.89,
+        "pred_time_ms": 0.14,
         "confusion_matrix": [
             [
                 10,
@@ -111,8 +111,8 @@
             40,
             40
         ],
-        "train_time_ms": 1.96,
-        "pred_time_ms": 0.32,
+        "train_time_ms": 1.68,
+        "pred_time_ms": 0.3,
         "confusion_matrix": [
             [
                 3,
