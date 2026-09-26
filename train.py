@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 print("================================================================")
-print("=== BẮT ĐẦU HUẤN LUYỆN DỰ ÁN 4-KERNEL SVM CHO BỘ HOA IRIS ===")
+print("=== BẮT ĐẦU HUẤN LUYỆN DỰ ÁN 5-KERNEL SVM CHO BỘ HOA IRIS ===")
 print("================================================================")
 
 # 1. Tải và chuẩn bị dữ liệu chuẩn R.A. Fisher Iris (150 mẫu, 4 đặc trưng)
@@ -137,5 +137,4 @@ print("✓ ĐÃ XUẤT THÀNH CÔNG:")
 print("  - 4 models: svm_linear.pkl, svm_rbf.pkl, svm_poly.pkl, svm_sigmoid.pkl")
 print("  - File metrics.json")
 print("  - File weights.json")
-print("  - Bộ vector tham chiếu X_train.npy, y_train.npy")
 print("================================================================")

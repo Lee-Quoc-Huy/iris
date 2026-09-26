@@ -210,6 +210,6 @@ VALUES
 (
     'about_app',
     'Giới thiệu hệ thống Iris SVM',
-    'Website phân loại hoa Iris bằng mô hình SVM (Support Vector Machine) chuyên sâu. Hệ thống cung cấp khả năng tự động nhận diện 4 đặc trưng, trực quan hóa ranh giới quyết định (Decision Boundary), huấn luyện đa Kernel (Linear, RBF, Poly, Sigmoid, Precomputed), lưu trữ thí nghiệm và so sánh Benchmark hiệu năng thuật toán.'
+    'Website phân loại hoa Iris bằng mô hình SVM (Support Vector Machine) chuyên sâu. Hệ thống cung cấp khả năng tự động nhận diện 4 đặc trưng, trực quan hóa ranh giới quyết định (Decision Boundary), huấn luyện đa Kernel (Linear, RBF, Poly, Sigmoid), lưu trữ thí nghiệm và so sánh Benchmark hiệu năng thuật toán.'
 )
 ON CONFLICT (key) DO NOTHING;

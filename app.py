@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Iris Multi-Kernel SVM API",
-    description="API Phân loại Hoa Diên Vĩ với 5 Kernel SVM chuyên sâu (Linear, RBF, Poly, Sigmoid, Precomputed)",
+    description="API Phân loại Hoa Diên Vĩ với 4 Kernel SVM chuyên sâu (Linear, RBF, Poly, Sigmoid)",
     version="2.0.0"
 )
 
@@ -83,7 +83,9 @@ def predict(data: IrisInput):
     features = np.array([[data.sepal_length, data.sepal_width, data.petal_length, data.petal_width]])
 
     start_time = time.time()
+    
     prediction = int(selected_model.predict(features)[0])
+
     exec_time_ms = round((time.time() - start_time) * 1000, 3)
 
     return {
