@@ -2379,6 +2379,54 @@ window.deleteAdminExperiment = async function(id) {
     } catch (e) {}
   }
   renderAdminExperimentsTable();
+  renderTimeline();
+  renderBenchmarkTable();
+  renderAdminStats();
+};
+
+window.deleteAllAdminExperiments = async function() {
+  const confirmed = confirm('⚠️ CẢNH BÁO QUẢN TRỊ VIÊN:\nBạn có chắc chắn muốn xóa TOÀN BỘ lịch sử thí nghiệm của tất cả người dùng trong hệ thống và Supabase không?\n\nThao tác này sẽ dọn sạch toàn bộ dữ liệu thí nghiệm và không thể hoàn tác!');
+  if (!confirmed) return;
+
+  const btn = document.getElementById('adminDeleteAllBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Đang xóa toàn bộ...';
+  }
+
+  // 1. Xóa trên bộ nhớ cục bộ
+  allSystemExperiments = [];
+  userTimeline = [];
+  localStorage.removeItem('iris_system_experiments');
+  if (currentUser.id) {
+    localStorage.removeItem(`iris_user_${currentUser.id}_timeline`);
+  }
+
+  // 2. Xóa trên Supabase CSDL
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient
+        .from('experiment_history')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) {
+        console.warn('Lỗi Supabase khi xóa toàn bộ thí nghiệm:', error);
+      }
+    } catch (e) {
+      console.warn('Lỗi kết nối Supabase:', e);
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🗑️</span> Xóa tất cả thí nghiệm';
+  }
+
+  renderAdminExperimentsTable();
+  renderTimeline();
+  renderBenchmarkTable();
+  renderAdminStats();
+  alert('✅ Đã xóa toàn bộ lịch sử thí nghiệm trên hệ thống và cơ sở dữ liệu Supabase thành công!');
 };
 
 // YÊU CẦU II.4: BẤM VÔ TÊN TÀI KHOẢN HIỆN NHỮNG THAO TÁC TÀI KHOẢN ĐÓ LÀM
