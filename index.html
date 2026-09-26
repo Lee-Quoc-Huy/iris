@@ -22,11 +22,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="bg-[#0b0c10] text-[#f7f5f2] selection:bg-[#e8702a]/30 selection:text-white min-h-screen relative overflow-x-hidden">
+<body class="bg-[#13141c] text-[#f7f5f2] selection:bg-[#e8702a]/30 selection:text-white min-h-screen relative overflow-x-hidden">
 
-    <!-- AMBIENT GLOW ORBS (HOÀNG HÔN THỞ NHẸ) -->
-    <div class="fixed top-[-10%] right-[-5%] w-[550px] h-[550px] rounded-full pointer-events-none z-0 orb-breathe bg-[radial-gradient(circle,rgba(232,112,42,0.12)_0%,rgba(242,193,78,0.06)_45%,transparent_70%)] blur-3xl"></div>
-    <div class="fixed bottom-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 orb-breathe bg-[radial-gradient(circle,rgba(232,112,42,0.10)_0%,rgba(192,132,252,0.06)_50%,transparent_70%)] blur-3xl" style="animation-delay: -3.5s;"></div>
+    <!-- AMBIENT GLOW ORBS (HOÀNG HÔN THỞ NHẸ & BẬT SÁNG ÁNH CAM) -->
+    <div class="fixed top-[-10%] right-[-5%] w-[680px] h-[680px] rounded-full pointer-events-none z-0 orb-breathe bg-[radial-gradient(circle,rgba(232,112,42,0.25)_0%,rgba(242,193,78,0.14)_45%,transparent_75%)] blur-3xl"></div>
+    <div class="fixed bottom-[-10%] left-[-5%] w-[720px] h-[720px] rounded-full pointer-events-none z-0 orb-breathe bg-[radial-gradient(circle,rgba(232,112,42,0.22)_0%,rgba(242,193,78,0.12)_50%,transparent_75%)] blur-3xl" style="animation-delay: -3.5s;"></div>
+    <div class="fixed top-[35%] left-[25%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 orb-breathe bg-[radial-gradient(circle,rgba(232,112,42,0.16)_0%,rgba(242,193,78,0.08)_50%,transparent_75%)] blur-3xl" style="animation-delay: -1.8s;"></div>
 
     <!-- 1. FULLSCREEN AUTH GATE (SPLIT SCREEN ĐĂNG NHẬP / ĐĂNG KÝ) -->
     <div id="authGateScreen" class="fixed inset-0 z-[200] flex items-center justify-center bg-[#0b0c10]/95 backdrop-blur-2xl overflow-y-auto">
@@ -113,11 +114,11 @@
         </div>
     </div>
 
-    <!-- 2. FIXED TOP NAVIGATION BAR (FLOATING PILL GLASS) -->
-    <header class="fixed top-0 left-0 right-0 z-[100] px-3 sm:px-6 py-3 flex items-center justify-between pointer-events-none gap-2">
+    <!-- 2. FIXED TOP NAVIGATION BAR (FLOATING PILL GLASS WITH SAFE AREA) -->
+    <header id="mainNavbar" class="fixed top-0 left-0 right-0 z-[100] px-3 sm:px-6 py-3 safe-area-header flex items-center justify-between pointer-events-none gap-2 transition-transform duration-300 transform translate-y-0">
         <!-- TRÁI: LOGO SVG + BRAND TEXT -> VỀ TRANG CHỦ -->
         <div class="flex items-center gap-2.5 cursor-pointer pointer-events-auto group shrink-0" onclick="showPage('homePage', null, 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine')">
-            <div class="w-9 h-9 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:border-[#e8702a] transition-colors">
+            <div class="w-9 h-9 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:border-[#e8702a] transition-colors shadow-lg">
                 <svg class="w-5 h-5 text-white" viewBox="0 0 256 256" fill="currentColor">
                     <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z" />
                 </svg>
@@ -159,14 +160,18 @@
 
         <!-- PHẢI: API BADGE + HƯỚNG DẪN + TÀI KHOẢN -->
         <div class="flex items-center gap-2 pointer-events-auto shrink-0">
-            <!-- API BADGE (COMPACT ON LAPTOPS) -->
-            <div id="apiStatusBadge" class="hidden xl:flex items-center gap-1.5 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 text-xs text-white/90">
+            <!-- API BADGE (FULL ON DESKTOP, DOT ONLY ON MOBILE) -->
+            <div id="apiStatusBadge" class="hidden md:flex items-center gap-1.5 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 text-xs text-white/90">
                 <span id="apiStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span id="apiStatusText" class="font-medium text-[11px] whitespace-nowrap">Supabase Connected</span>
             </div>
+            <!-- API DOT ONLY ON MOBILE -->
+            <div class="md:hidden flex items-center p-1.5 rounded-full bg-white/[0.1] border border-white/20" title="API Status">
+                <span id="apiStatusDotMobile" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
 
-            <!-- NÚT GIỚI THIỆU & HƯỚNG DẪN -->
-            <button type="button" onclick="openGuideModal()" class="w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 text-white/90 flex items-center justify-center text-sm transition-all shrink-0" title="Giới thiệu & Hướng dẫn">
+            <!-- NÚT GIỚI THIỆU & HƯỚNG DẪN (DESKTOP) -->
+            <button type="button" onclick="openGuideModal()" class="hidden sm:flex w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 text-white/90 items-center justify-center text-sm transition-all shrink-0" title="Giới thiệu & Hướng dẫn">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M12 16v-4"></path>
@@ -174,17 +179,17 @@
                 </svg>
             </button>
 
-            <!-- NÚT TÀI KHOẢN / USER PILL -->
-            <button id="userProfileBtn" type="button" onclick="openAuthModal()" class="flex items-center gap-2 bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 rounded-full pl-2 pr-3 py-1.5 transition-all text-left shrink-0">
+            <!-- NÚT TÀI KHOẢN (DESKTOP) -->
+            <button id="userProfileBtn" type="button" onclick="openAuthModal()" class="hidden md:flex items-center gap-2 bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-md border border-white/20 rounded-full pl-2 pr-3 py-1.5 transition-all text-left shrink-0">
                 <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-[#e8702a] to-[#f2c14e] flex items-center justify-center text-xs font-bold text-black">
                     👤
                 </div>
-                <span id="userDisplayName" class="text-xs font-medium text-white max-w-[90px] truncate">Khách</span>
+                <span id="userDisplayName" class="text-xs font-medium text-white max-w-[80px] sm:max-w-[90px] truncate">Khách</span>
                 <span id="userRoleBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white uppercase">User</span>
             </button>
 
             <!-- MOBILE HAMBURGER BUTTON -->
-            <button type="button" onclick="toggleMobileNav()" class="lg:hidden w-9 h-9 rounded-full bg-white/[0.08] border border-white/20 flex items-center justify-center text-white shrink-0">
+            <button type="button" onclick="toggleMobileNav()" class="lg:hidden w-9 h-9 rounded-full bg-white/[0.1] hover:bg-white/[0.2] border border-white/25 flex items-center justify-center text-white shrink-0 active:scale-95 transition-all" aria-label="Menu">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="3" y1="12" x2="21" y2="12"></line>
                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -194,29 +199,78 @@
         </div>
     </header>
 
-    <!-- MOBILE FULLSCREEN NAVIGATION DRAWER -->
-    <div id="mobileNavDrawer" class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-2xl hidden flex-col justify-between p-8 overflow-y-auto">
-        <div class="flex justify-between items-center pb-6 border-b border-white/10">
-            <span class="font-playfair text-2xl text-white">Iris SVM</span>
-            <button onclick="toggleMobileNav()" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-lg">✕</button>
-        </div>
+    <!-- MOBILE FULLSCREEN NAVIGATION DRAWER (SUPPORT NOTCH, DYNAMIC ISLAND & ANDROID SAFE AREAS) -->
+    <div id="mobileNavDrawer" class="fixed inset-0 z-[150] bg-[#0d0e12]/95 backdrop-blur-2xl hidden flex-col justify-between p-6 safe-area-drawer overflow-y-auto">
+        <div>
+            <!-- DRAWER HEADER -->
+            <div class="flex justify-between items-center pb-5 border-b border-white/15">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-[#e8702a]/20 border border-[#e8702a]/40 flex items-center justify-center text-[#f2c14e]">
+                        <svg class="w-4 h-4" viewBox="0 0 256 256" fill="currentColor">
+                            <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="font-playfair text-xl font-bold text-white block">Iris SVM</span>
+                        <span class="text-[10px] text-white/50 block">Menu Điều Hướng</span>
+                    </div>
+                </div>
+                <button onclick="toggleMobileNav()" class="w-9 h-9 rounded-full bg-white/10 active:scale-90 border border-white/20 flex items-center justify-center text-white text-base transition-all">✕</button>
+            </div>
 
-        <div class="flex flex-col gap-4 py-8">
-            <button class="text-left font-playfair text-3xl text-white/90 hover:text-white" onclick="showPageMobile('homePage', 'Trang chủ', 'Tổng quan về hoa Iris & thuật toán SVM')">Trang chủ</button>
-            <button class="text-left font-playfair text-3xl text-white/90 hover:text-white" onclick="showPageMobile('predictPage', 'Nhận diện & Huấn luyện SVM', 'Nhận diện phân loại tức thì và tự do điều chỉnh siêu tham số SVM.')">Nhận diện</button>
-            <button class="text-left font-playfair text-3xl text-white/90 hover:text-white" onclick="showPageMobile('guessPage', 'Thử thách: Bạn đoán trước SVM', 'Quan sát biểu đồ 2D và đoán loài hoa trước khi mô hình phân loại.')">Đoán hoa</button>
-            <button class="text-left font-playfair text-3xl text-white/90 hover:text-white" onclick="showPageMobile('filePage', 'Phân tích tập dữ liệu', 'Tải tệp tin CSV, XLSX, XLS hoặc TXT để SVM phân loại hàng loạt.')">Phân tích dữ liệu</button>
-            <button class="text-left font-playfair text-3xl text-white/90 hover:text-white" onclick="showPageMobile('benchmarkPage', 'Model Benchmark', 'Bảng so sánh thực tế các mô hình & Kernel từ lịch sử huấn luyện của tài khoản.')">Model Benchmark</button>
-            <button class="text-left font-playfair text-3xl text-white/90 hover:text-white" onclick="showPageMobile('historyPage', 'Lịch sử nhận diện', 'Nhật ký các lần nhận diện của tài khoản hiện tại.')">Lịch sử nhận diện</button>
-            <div id="mobileAdminSection" class="hidden flex-col gap-4 pt-4 border-t border-white/10">
-                <button class="text-left font-playfair text-3xl text-[#f2c14e]" onclick="showPageMobile('adminExperimentsPage', 'Lịch sử Thí nghiệm Toàn hệ thống', 'Xem toàn bộ kết quả huấn luyện SVM của tất cả người dùng trong database.')">Thí nghiệm toàn hệ thống</button>
-                <button class="text-left font-playfair text-3xl text-[#f2c14e]" onclick="showPageMobile('adminManagePage', 'Quản trị & Thống kê hệ thống', 'Quản lý người dùng, thống kê lượt dùng model và nội dung website.')">Quản trị & Thống kê</button>
+            <!-- NAVIGATION BUTTONS WITH ICONS & TOUCH PILLS -->
+            <div class="flex flex-col gap-2.5 py-6">
+                <button class="w-full text-left p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 flex items-center gap-3.5 transition-all text-white font-medium text-sm" onclick="showPageMobile('homePage', 'Trang chủ', 'Tổng quan về hoa Iris & thuật toán SVM')">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-base">🏠</span>
+                    <span>Trang chủ</span>
+                </button>
+                <button class="w-full text-left p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 flex items-center gap-3.5 transition-all text-white font-medium text-sm" onclick="showPageMobile('predictPage', 'Nhận diện & Huấn luyện SVM', 'Nhận diện phân loại tức thì và tự do điều chỉnh siêu tham số SVM.')">
+                    <span class="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-base">🎯</span>
+                    <span>Nhận diện & Huấn luyện</span>
+                </button>
+                <button class="w-full text-left p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 flex items-center gap-3.5 transition-all text-white font-medium text-sm" onclick="showPageMobile('guessPage', 'Thử thách: Bạn đoán trước SVM', 'Quan sát biểu đồ 2D và đoán loài hoa trước khi mô hình phân loại.')">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-base">🎲</span>
+                    <span>Đoán hoa thử thách</span>
+                </button>
+                <button class="w-full text-left p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 flex items-center gap-3.5 transition-all text-white font-medium text-sm" onclick="showPageMobile('filePage', 'Phân tích tập dữ liệu', 'Tải tệp tin CSV, XLSX, XLS hoặc TXT để SVM phân loại hàng loạt.')">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-base">📁</span>
+                    <span>Phân tích tập dữ liệu</span>
+                </button>
+                <button class="w-full text-left p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 flex items-center gap-3.5 transition-all text-white font-medium text-sm" onclick="showPageMobile('benchmarkPage', 'Model Benchmark', 'Bảng so sánh thực tế các mô hình & Kernel từ lịch sử huấn luyện của tài khoản.')">
+                    <span class="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-base">🏆</span>
+                    <span>Model Benchmark</span>
+                </button>
+                <button class="w-full text-left p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 flex items-center gap-3.5 transition-all text-white font-medium text-sm" onclick="showPageMobile('historyPage', 'Lịch sử nhận diện', 'Nhật ký các lần nhận diện của tài khoản hiện tại.')">
+                    <span class="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-base">📜</span>
+                    <span>Lịch sử nhận diện</span>
+                </button>
+                <div id="mobileAdminSection" class="hidden flex-col gap-2.5 pt-3 border-t border-white/15">
+                    <button class="w-full text-left p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3.5 text-[#f2c14e] font-semibold text-sm" onclick="showPageMobile('adminExperimentsPage', 'Lịch sử Thí nghiệm Toàn hệ thống', 'Xem toàn bộ kết quả huấn luyện SVM của tất cả người dùng trong database.')">
+                        <span>🧪</span> <span>Thí nghiệm toàn hệ thống</span>
+                    </button>
+                    <button class="w-full text-left p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3.5 text-[#f2c14e] font-semibold text-sm" onclick="showPageMobile('adminManagePage', 'Quản trị & Thống kê hệ thống', 'Quản lý người dùng, thống kê lượt dùng model và nội dung website.')">
+                        <span>⚙️</span> <span>Quản trị & Thống kê</span>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="pt-6 border-t border-white/10 flex justify-between items-center text-xs text-white/60">
-            <button onclick="openGuideModal(); toggleMobileNav();" class="text-[#e8702a]">ℹ️ Giới thiệu & Hướng dẫn</button>
-            <button onclick="openAuthModal(); toggleMobileNav();" class="underline">Tài khoản</button>
+        <!-- DRAWER FOOTER (THÔNG TIN TÀI KHOẢN, HUY HIỆU VAI TRÒ & ĐĂNG XUẤT) -->
+        <div class="pt-4 border-t border-white/15 space-y-3">
+            <div class="flex items-center justify-between">
+                <button onclick="openGuideModal(); toggleMobileNav();" class="text-[#e8702a] font-semibold text-xs flex items-center gap-1.5">
+                    <span>✨</span> <span>Giới thiệu & Hướng dẫn</span>
+                </button>
+                <button onclick="openAuthModal(); toggleMobileNav();" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-3 py-1.5 text-xs text-white">
+                    <span id="mobileDrawerUserName" class="font-medium">Khách</span>
+                    <span id="mobileDrawerRoleBadge" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white uppercase">User</span>
+                </button>
+            </div>
+            <div id="mobileDrawerLogoutBtn" class="hidden pt-1">
+                <button onclick="handleLogout(); toggleMobileNav();" class="w-full py-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-200 text-xs font-semibold flex items-center justify-center gap-2">
+                    <span>🚪</span> <span>Đăng xuất tài khoản</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -227,8 +281,8 @@
         <!-- 0. TRANG CHỦ (HERO & BA LOÀI HOA IRIS) -->
         <!-- ============================================================ -->
         <section id="homePage" class="page-view active w-full">
-            <!-- HERO SECTION (100dvh) -->
-            <div id="heroContainer" class="relative w-full overflow-hidden h-[100dvh] bg-[#0b0c10] flex items-center justify-center">
+            <!-- HERO SECTION (85vh on mobile so user sees peek of content below) -->
+            <div id="heroContainer" class="relative w-full overflow-hidden h-[85vh] md:h-[100dvh] bg-[#0b0c10] flex items-center justify-center">
                 <!-- z-10: Cụm ảnh nền zoom -->
                 <div class="hero-zoom absolute inset-0 z-10">
                     <img id="heroBgImage" src="/images/virginica.jpg" alt="Iris Sunset" class="w-full h-full object-cover object-[center_55%] filter brightness-[0.46] saturate-[0.6] contrast-[1.1]" />
@@ -247,11 +301,11 @@
                 <!-- z-50: Tiêu đề Hero Reveal -->
                 <div class="absolute top-[20%] left-0 right-0 z-50 flex flex-col items-center text-center px-6 pointer-events-none">
                     <h1 class="text-white leading-[1.05] drop-shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
-                        <span class="block font-playfair font-normal text-4xl sm:text-6xl md:text-7xl lg:text-8xl hero-anim hero-reveal" style="animation-delay: 0.25s;">
-                            Iris Support Vector Machine
+                        <span class="block font-playfair font-normal text-3xl sm:text-5xl md:text-6xl lg:text-7xl hero-anim hero-reveal max-w-4xl mx-auto" style="animation-delay: 0.25s;">
+                            Khám phá ranh giới phân loại bằng SVM
                         </span>
-                        <span class="block font-sans text-xs sm:text-sm md:text-base text-white/75 font-normal tracking-wider uppercase mt-4 hero-anim hero-reveal" style="animation-delay: 0.42s;">
-                            Khám phá bản chất hình học của siêu phẳng phân loại
+                        <span class="block font-sans text-xs sm:text-sm md:text-base text-white/80 font-normal tracking-wider uppercase mt-4 hero-anim hero-reveal" style="animation-delay: 0.42s;">
+                            Khám phá hình học phía sau thuật toán Support Vector Machine.
                         </span>
                     </h1>
 
@@ -284,121 +338,83 @@
                     <div class="h-[2px] w-12 bg-gradient-to-r from-[#e8702a] to-[#f2c14e] rounded-full mt-3"></div>
                 </div>
 
-                <!-- 3 CARDS CHI TIẾT -->
-                <div class="grid md:grid-cols-3 gap-6">
+                <!-- 3 CARDS HÌNH ẢNH 3 LOÀI HOA (CAROUSEL SNAP TRÊN MOBILE, GRID TRÊN DESKTOP) -->
+                <div class="flex md:grid md:grid-cols-3 overflow-x-auto snap-x snap-mandatory gap-5 px-1 pb-4 no-scrollbar">
                     <!-- 1. IRIS SETOSA -->
-                    <div class="iris-glass rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30">
-                        <div class="relative h-[220px] w-full bg-black/40 overflow-hidden">
-                            <img src="/images/setosa.jpg" alt="Iris Setosa" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onerror="this.src='/images/setosa.svg'" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-[#101114] via-black/30 to-transparent"></div>
-                            <div class="absolute bottom-4 left-5 right-5">
-                                <span class="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/40 mb-1">
+                    <div class="snap-center w-[85vw] sm:w-[320px] md:w-full shrink-0 iris-glass rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:border-[#4ade80]/50 shadow-xl cursor-pointer group" onclick="openFlowerModal('setosa')">
+                        <div class="relative h-[240px] sm:h-[280px] w-full bg-black/40 overflow-hidden">
+                            <img src="/images/setosa.jpg" alt="Iris Setosa" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='/images/setosa.svg'" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#101114] via-black/20 to-transparent"></div>
+                            <div class="absolute top-4 right-4">
+                                <span class="text-xs font-bold px-3 py-1 rounded-full bg-[#4ade80]/25 text-[#4ade80] border border-[#4ade80]/40 backdrop-blur-md">
                                     Setosa
                                 </span>
-                                <h3 class="font-playfair text-2xl text-white">Iris Setosa</h3>
-                                <p class="text-xs text-white/70 italic">Bristle-pointed Iris · Diên vĩ mỏ nhọn</p>
+                            </div>
+                            <div class="absolute bottom-4 left-5 right-5">
+                                <h3 class="font-playfair text-2xl text-white group-hover:text-[#4ade80] transition-colors">Iris Setosa</h3>
+                                <p class="text-xs text-white/70 italic mt-0.5">Diên vĩ mỏ nhọn · Bristle-pointed Iris</p>
                             </div>
                         </div>
-                        <div class="p-6 flex flex-col gap-4 flex-1 text-sm">
-                            <p class="text-white/80 leading-relaxed text-xs">
-                                Loài hoa dại bản địa vùng Bắc Cực và cận Bắc Cực (Alaska, Siberia, Canada). Cây có kích thước nhỏ gọn, hoa màu tím xanh lam đậm với cánh hoa tiêu giảm độc đáo.
-                            </p>
-                            <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 text-xs text-white/75 space-y-1.5">
-                                <div class="font-semibold text-white flex items-center gap-1.5 text-[11px] uppercase tracking-wide">
-                                    <span>🔍</span> Đặc điểm hình thái nổi bật:
-                                </div>
-                                <div>• <b>Cánh hoa (Petal):</b> Rất nhỏ, hẹp và ngắn (tiêu giảm chỉ còn dạng lông cứng/bristle), dựng đứng.</div>
-                                <div>• <b>Đài hoa (Sepal):</b> Bản rộng, rủ xuống, có vệt tín hiệu màu vàng-trắng rực rỡ ở gốc đài.</div>
-                                <div>• <b>Màu sắc:</b> Tím hoa cà đậm đến xanh tím thẫm xen kẽ gân tím sâu.</div>
-                            </div>
-                            <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 text-xs font-mono tabular-nums text-white/90 space-y-1">
-                                <div class="font-sans font-semibold text-white text-[11px] uppercase tracking-wide mb-1">
-                                    📏 Kích thước thực tế (Fisher):
-                                </div>
-                                <div>Sepal: <b>4.3 – 5.8 cm</b> (dài) × <b>2.3 – 4.4 cm</b> (rộng)</div>
-                                <div>Petal: <b>1.0 – 1.9 cm</b> (dài) × <b>0.1 – 0.6 cm</b> (rộng)</div>
-                            </div>
-                            <div class="mt-auto p-3 rounded-2xl bg-[#4ade80]/10 border border-[#4ade80]/30 text-[#4ade80] text-xs">
-                                ⚡ <b>Trong mô hình SVM:</b> Phân tách tuyến tính tuyệt đối 100% (Linearly Separable) nhờ Petal Length/Width cực kỳ nhỏ biệt lập.
-                            </div>
+                        <div class="p-5 flex items-center justify-between bg-white/[0.02]">
+                            <span class="text-xs text-white/60">Cánh hoa ngắn (1.0–1.9 cm)</span>
+                            <span class="text-xs font-semibold text-[#4ade80] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                ℹ️ Chi tiết ➔
+                            </span>
                         </div>
                     </div>
 
                     <!-- 2. IRIS VERSICOLOR -->
-                    <div class="iris-glass rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30">
-                        <div class="relative h-[220px] w-full bg-black/40 overflow-hidden">
-                            <img src="/images/versicolor.jpg" alt="Iris Versicolor" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onerror="this.src='/images/versicolor.svg'" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-[#101114] via-black/30 to-transparent"></div>
-                            <div class="absolute bottom-4 left-5 right-5">
-                                <span class="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/40 mb-1">
-                                    Versicolor (Vàng hổ phách)
+                    <div class="snap-center w-[85vw] sm:w-[320px] md:w-full shrink-0 iris-glass rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:border-[#f59e0b]/50 shadow-xl cursor-pointer group" onclick="openFlowerModal('versicolor')">
+                        <div class="relative h-[240px] sm:h-[280px] w-full bg-black/40 overflow-hidden">
+                            <img src="/images/versicolor.jpg" alt="Iris Versicolor" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='/images/versicolor.svg'" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#101114] via-black/20 to-transparent"></div>
+                            <div class="absolute top-4 right-4">
+                                <span class="text-xs font-bold px-3 py-1 rounded-full bg-[#f59e0b]/25 text-[#f59e0b] border border-[#f59e0b]/40 backdrop-blur-md">
+                                    Versicolor
                                 </span>
-                                <h3 class="font-playfair text-2xl text-white">Iris Versicolor</h3>
-                                <p class="text-xs text-white/70 italic">Harlequin Blueflag · Diên vĩ đa sắc Bắc Mỹ</p>
+                            </div>
+                            <div class="absolute bottom-4 left-5 right-5">
+                                <h3 class="font-playfair text-2xl text-white group-hover:text-[#f59e0b] transition-colors">Iris Versicolor</h3>
+                                <p class="text-xs text-white/70 italic mt-0.5">Diên vĩ đa sắc · Harlequin Blueflag</p>
                             </div>
                         </div>
-                        <div class="p-6 flex flex-col gap-4 flex-1 text-sm">
-                            <p class="text-white/80 leading-relaxed text-xs">
-                                Loài hoa diên vĩ đầm lầy phổ biến ở miền đông Bắc Mỹ. Tên gọi "versicolor" có nghĩa là nhiều màu sắc, thể hiện qua các dải vân tím, trắng và vàng đan xen tinh tế.
-                            </p>
-                            <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 text-xs text-white/75 space-y-1.5">
-                                <div class="font-semibold text-white flex items-center gap-1.5 text-[11px] uppercase tracking-wide">
-                                    <span>🔍</span> Đặc điểm hình thái nổi bật:
-                                </div>
-                                <div>• <b>Cánh hoa (Petal):</b> Kích thước trung bình cân đối, hình thìa, hướng xiên lên trên.</div>
-                                <div>• <b>Đài hoa (Sepal):</b> Đài hoa cong mềm mại với họa tiết mạng gân tím đậm trên nền trắng-vàng tâm đài.</div>
-                                <div>• <b>Màu sắc:</b> Tím lam, tím hoa cà đến tím violet với tâm vàng chanh sáng.</div>
-                            </div>
-                            <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 text-xs font-mono tabular-nums text-white/90 space-y-1">
-                                <div class="font-sans font-semibold text-white text-[11px] uppercase tracking-wide mb-1">
-                                    📏 Kích thước thực tế (Fisher):
-                                </div>
-                                <div>Sepal: <b>4.9 – 7.0 cm</b> (dài) × <b>2.0 – 3.4 cm</b> (rộng)</div>
-                                <div>Petal: <b>3.0 – 5.1 cm</b> (dài) × <b>1.0 – 1.8 cm</b> (rộng)</div>
-                            </div>
-                            <div class="mt-auto p-3 rounded-2xl bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-[#f59e0b] text-xs">
-                                ⚡ <b>Trong mô hình SVM:</b> Nằm ở vùng trung gian; ranh giới với Virginica hơi đan xen nhẹ (Non-linear boundary), cần kernel tối ưu (RBF/Poly/Linear C cao).
-                            </div>
+                        <div class="p-5 flex items-center justify-between bg-white/[0.02]">
+                            <span class="text-xs text-white/60">Cánh hoa vừa (3.0–5.1 cm)</span>
+                            <span class="text-xs font-semibold text-[#f59e0b] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                ℹ️ Chi tiết ➔
+                            </span>
                         </div>
                     </div>
 
                     <!-- 3. IRIS VIRGINICA -->
-                    <div class="iris-glass rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30">
-                        <div class="relative h-[220px] w-full bg-black/40 overflow-hidden">
-                            <img src="/images/virginica.jpg" alt="Iris Virginica" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onerror="this.src='/images/virginica.svg'" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-[#101114] via-black/30 to-transparent"></div>
-                            <div class="absolute bottom-4 left-5 right-5">
-                                <span class="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#c084fc]/20 text-[#c084fc] border border-[#c084fc]/40 mb-1">
+                    <div class="snap-center w-[85vw] sm:w-[320px] md:w-full shrink-0 iris-glass rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:border-[#c084fc]/50 shadow-xl cursor-pointer group" onclick="openFlowerModal('virginica')">
+                        <div class="relative h-[240px] sm:h-[280px] w-full bg-black/40 overflow-hidden">
+                            <img src="/images/virginica.jpg" alt="Iris Virginica" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='/images/virginica.svg'" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#101114] via-black/20 to-transparent"></div>
+                            <div class="absolute top-4 right-4">
+                                <span class="text-xs font-bold px-3 py-1 rounded-full bg-[#c084fc]/25 text-[#c084fc] border border-[#c084fc]/40 backdrop-blur-md">
                                     Virginica
                                 </span>
-                                <h3 class="font-playfair text-2xl text-white">Iris Virginica</h3>
-                                <p class="text-xs text-white/70 italic">Virginia Iris / Southern Blue Flag · Diên vĩ Virginia</p>
+                            </div>
+                            <div class="absolute bottom-4 left-5 right-5">
+                                <h3 class="font-playfair text-2xl text-white group-hover:text-[#c084fc] transition-colors">Iris Virginica</h3>
+                                <p class="text-xs text-white/70 italic mt-0.5">Diên vĩ Virginia · Southern Blue Flag</p>
                             </div>
                         </div>
-                        <div class="p-6 flex flex-col gap-4 flex-1 text-sm">
-                            <p class="text-white/80 leading-relaxed text-xs">
-                                Loài diên vĩ lâu năm bản địa vùng đất ngập nước ven biển đông nam Hoa Kỳ. Cây có vóc dáng cao lớn nhất trong 3 loài với các đóa hoa nở to, rực rỡ và lộng lẫy.
-                            </p>
-                            <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 text-xs text-white/75 space-y-1.5">
-                                <div class="font-semibold text-white flex items-center gap-1.5 text-[11px] uppercase tracking-wide">
-                                    <span>🔍</span> Đặc điểm hình thái nổi bật:
-                                </div>
-                                <div>• <b>Cánh hoa (Petal):</b> To rộng và dài nhất, vươn cao với viền cánh lượn sóng mềm mại.</div>
-                                <div>• <b>Đài hoa (Sepal):</b> Cực lớn, mở rộng sang hai bên, có mảng lông tơ vàng (crest) đặc trưng ở họng đài.</div>
-                                <div>• <b>Màu sắc:</b> Xanh lam hoa cà nhạt đến tím lavender quý phái, gân hoa thanh mảnh.</div>
-                            </div>
-                            <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 text-xs font-mono tabular-nums text-white/90 space-y-1">
-                                <div class="font-sans font-semibold text-white text-[11px] uppercase tracking-wide mb-1">
-                                    📏 Kích thước thực tế (Fisher):
-                                </div>
-                                <div>Sepal: <b>4.9 – 7.9 cm</b> (dài) × <b>2.2 – 3.8 cm</b> (rộng)</div>
-                                <div>Petal: <b>4.5 – 6.9 cm</b> (dài) × <b>1.4 – 2.5 cm</b> (rộng)</div>
-                            </div>
-                            <div class="mt-auto p-3 rounded-2xl bg-[#c084fc]/10 border border-[#c084fc]/30 text-[#c084fc] text-xs">
-                                ⚡ <b>Trong mô hình SVM:</b> Có các vector hỗ trợ (Support Vectors) nằm giáp ranh với Versicolor, siêu phẳng SVM xác định chính xác dựa trên tổ hợp Petal L & Petal W.
-                            </div>
+                        <div class="p-5 flex items-center justify-between bg-white/[0.02]">
+                            <span class="text-xs text-white/60">Cánh hoa lớn (4.5–6.9 cm)</span>
+                            <span class="text-xs font-semibold text-[#c084fc] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                ℹ️ Chi tiết ➔
+                            </span>
                         </div>
                     </div>
+                </div>
+
+                <!-- CAROUSEL INDICATOR DOTS (MOBILE) -->
+                <div class="flex md:hidden items-center justify-center gap-2 mt-2">
+                    <span class="w-2 h-2 rounded-full bg-[#e8702a]"></span>
+                    <span class="w-2 h-2 rounded-full bg-white/30"></span>
+                    <span class="w-2 h-2 rounded-full bg-white/30"></span>
                 </div>
 
                 <!-- CTA SANG NHẬN DIỆN -->
@@ -631,6 +647,96 @@
                     </div>
                 </div>
 
+                <!-- ============================================================ -->
+                <!-- TÍNH NĂNG MỚI: 🧬 LỰA CHỌN ĐẶC TRƯNG (FEATURE SELECTION ADD-ON) -->
+                <!-- ============================================================ -->
+                <div class="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent border border-amber-500/30 mb-6">
+                    <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">🧬</span>
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wider">Lựa chọn đặc trưng</h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e8702a]/20 border border-[#e8702a]/40 text-[#f2c14e]">Add-On</span>
+                        </div>
+                        <div id="featureSelectionCounter" class="text-xs font-mono font-semibold text-amber-300">
+                            Đã chọn: <span id="selectedFeaturesCount">4</span> / 4
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-white/70 mb-4">
+                        Chọn từ 2 đến 4 đặc trưng hình học để huấn luyện mô hình SVM theo các trục thuộc tính mong muốn.
+                    </p>
+
+                    <!-- 4 CHECKBOXES -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 cursor-pointer transition-all">
+                            <input type="checkbox" id="chkSepalLength" checked onchange="updateFeatureSelectionState()" class="w-4 h-4 rounded border-white/30 text-[#e8702a] focus:ring-[#e8702a] focus:ring-offset-0 bg-black/40 cursor-pointer">
+                            <span class="text-xs font-medium text-white">Sepal Length</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 cursor-pointer transition-all">
+                            <input type="checkbox" id="chkSepalWidth" checked onchange="updateFeatureSelectionState()" class="w-4 h-4 rounded border-white/30 text-[#e8702a] focus:ring-[#e8702a] focus:ring-offset-0 bg-black/40 cursor-pointer">
+                            <span class="text-xs font-medium text-white">Sepal Width</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 cursor-pointer transition-all">
+                            <input type="checkbox" id="chkPetalLength" checked onchange="updateFeatureSelectionState()" class="w-4 h-4 rounded border-white/30 text-[#e8702a] focus:ring-[#e8702a] focus:ring-offset-0 bg-black/40 cursor-pointer">
+                            <span class="text-xs font-medium text-white">Petal Length</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 cursor-pointer transition-all">
+                            <input type="checkbox" id="chkPetalWidth" checked onchange="updateFeatureSelectionState()" class="w-4 h-4 rounded border-white/30 text-[#e8702a] focus:ring-[#e8702a] focus:ring-offset-0 bg-black/40 cursor-pointer">
+                            <span class="text-xs font-medium text-white">Petal Width</span>
+                        </label>
+                    </div>
+
+                    <!-- THÔNG BÁO LỖI NẾU CHỌN DƯỚI 2 -->
+                    <div id="featureSelectionError" style="display: none;" class="p-2.5 mb-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-medium flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>Vui lòng chọn ít nhất 2 đặc trưng.</span>
+                    </div>
+
+                    <div class="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-white/10">
+                        <button type="button" id="btnTrainSelectedFeatures" onclick="trainWithSelectedFeatures()" class="py-2.5 px-6 rounded-full bg-gradient-to-r from-[#e8702a] to-[#f2c14e] hover:brightness-110 active:scale-95 text-black font-bold text-xs transition-all shadow-lg shadow-[#e8702a]/25 flex items-center gap-2">
+                            <span>🚀</span>
+                            <span>Chạy với đặc trưng đã chọn</span>
+                        </button>
+                    </div>
+
+                    <!-- KHU VỰC KẾT QUẢ THEO ĐẶC TRƯNG -->
+                    <div id="selectedFeaturesResultsArea" class="mt-4 p-4 rounded-xl bg-black/40 border border-white/15 hidden">
+                        <div class="text-xs font-bold text-white mb-2 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">📊 KẾT QUẢ THEO ĐẶC TRƯNG</span>
+                            <span id="sfModelBadge" class="text-[10px] font-mono text-[#f2c14e] bg-white/10 px-2 py-0.5 rounded-full">RBF (C=1.0)</span>
+                        </div>
+                        <div class="text-[11px] text-white/70 mb-3">
+                            Features đang sử dụng: <b id="sfUsedFeaturesList" class="text-amber-300">Sepal Length, Sepal Width, Petal Length, Petal Width</b>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 font-mono text-center">
+                            <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+                                <div class="text-[9px] text-white/50">Accuracy</div>
+                                <div id="sfAccuracyVal" class="text-sm font-bold text-[#f2c14e]">96.7%</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+                                <div class="text-[9px] text-white/50">Precision</div>
+                                <div id="sfPrecisionVal" class="text-sm font-bold text-emerald-400">0.967</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+                                <div class="text-[9px] text-white/50">Recall</div>
+                                <div id="sfRecallVal" class="text-sm font-bold text-emerald-400">0.967</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+                                <div class="text-[9px] text-white/50">F1-Score</div>
+                                <div id="sfF1Val" class="text-sm font-bold text-emerald-400">0.967</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+                                <div class="text-[9px] text-white/50">Support Vectors</div>
+                                <div id="sfSVVal" class="text-sm font-bold text-purple-300">23</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+                                <div class="text-[9px] text-white/50">Training Time</div>
+                                <div id="sfTimeVal" class="text-sm font-bold text-blue-300">1.2 ms</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- THANH ĐIỀU KHIỂN THAM SỐ VÀ CHỌN ĐẶC TRƯNG (YÊU CẦU II.7: CHO PHÉP CHỌN CẢ 4 THÔNG SỐ) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-2xl bg-white/[0.04] border border-white/10 mb-6">
                     <!-- 1. Kernel -->
@@ -714,30 +820,25 @@
                     </div>
                 </div>
 
+                <!-- BAR THÔNG TIN TỎA TỘ & HƯỚNG DẪN CẢM ỨNG (HIỂN THỊ TRÊN BẢNG VẼ ĐỂ KHÔNG BỊ CHE ĐIỂM DỮ LIỆU) -->
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-3 px-1 text-xs">
+                    <div id="chartHudBadge" class="p-2 px-3 rounded-xl bg-white/[0.06] border border-white/15 flex items-center gap-2.5 text-[11px] text-white">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                        <span id="chartHudCoords" class="font-mono tabular-nums text-white/90">Petal Length: 1.4 cm · Petal Width: 0.2 cm</span>
+                        <span class="w-px h-3 bg-white/20"></span>
+                        <span id="chartHudSpecies" class="font-semibold text-[#f59e0b]">● Iris Versicolor (Vàng hổ phách)</span>
+                    </div>
+                    <div id="chartDragHint" class="text-[11px] text-white/70 flex items-center gap-1.5">
+                        <span>💡</span> <span><b>Tương tác:</b> Nhấp hoặc <b>kéo con trỏ đỏ</b> trực tiếp trên bảng để dự đoán!</span>
+                    </div>
+                </div>
+
                 <!-- KHUNG VẼ BIỂU ĐỒ DECISION BOUNDARY (TƯƠNG TÁC KÉO / CLICK / SOi ĐIỂM) -->
-                <div class="relative h-[460px] w-full rounded-2xl bg-[#0e0f13] border border-white/15 overflow-hidden p-2 group">
-                    <canvas id="decisionChart" class="cursor-crosshair w-full h-full"></canvas>
-
-                    <!-- FLOATING INTERACTIVE HUD (HIỂN THỊ TỌA ĐỘ VÀ VÙNG PHÂN LOẠI TRỰC TIẾP) -->
-                    <div id="chartHudBadge" class="absolute top-4 right-4 pointer-events-none transition-opacity duration-200 bg-[#101114]/90 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 py-2 text-xs shadow-xl flex items-center gap-3">
-                        <div class="flex items-center gap-1.5 text-white/70">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span id="chartHudCoords" class="font-mono tabular-nums text-white">Petal Length: 1.4 cm · Petal Width: 0.2 cm</span>
-                        </div>
-                        <span class="w-px h-3.5 bg-white/20"></span>
-                        <div id="chartHudSpecies" class="font-semibold text-[#f59e0b]">
-                            ● Iris Versicolor (Vàng hổ phách)
-                        </div>
-                    </div>
-
-                    <!-- FLOATING HINT (GỢI Ý TƯƠNG TÁC) -->
-                    <div id="chartDragHint" class="absolute bottom-4 left-4 pointer-events-none bg-black/70 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[11px] text-white/80 flex items-center gap-2 transition-all">
-                        <span>💡</span>
-                        <span><b>Tương tác:</b> Nhấp bất kỳ hoặc <b>kéo chuột</b> để di chuyển điểm mẫu thử qua các vùng quyết định SVM!</span>
-                    </div>
+                <div class="relative w-full h-[320px] sm:h-[400px] md:h-[460px] rounded-2xl bg-[#0e0f13] border border-white/15 overflow-hidden p-2 group">
+                    <canvas id="decisionChart" class="cursor-crosshair w-full h-full touch-none" style="touch-action: none;"></canvas>
 
                     <!-- TOAST NOTIFICATION KHI CLICK CHỌN MẪU HOA TRÊN BIỂU ĐỒ -->
-                    <div id="chartSampleToast" class="absolute top-4 left-4 pointer-events-none opacity-0 transition-opacity duration-300 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-300 rounded-xl px-3 py-1.5 text-xs flex items-center gap-2">
+                    <div id="chartSampleToast" class="absolute top-3 left-3 pointer-events-none opacity-0 transition-opacity duration-300 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-300 rounded-xl px-3 py-1.5 text-xs flex items-center gap-2 z-20">
                         <span>🌸</span>
                         <span id="chartSampleToastText">Đã nạp mẫu hoa</span>
                     </div>
@@ -761,9 +862,19 @@
                     </div>
                     <button type="button" class="px-3 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-xs text-white/70" onclick="clearTimeline()">Xóa timeline</button>
                 </div>
-                <div id="timelineList" class="space-y-3">
+                <div id="timelineList" class="space-y-3 max-h-64 overflow-y-auto pr-1">
                     <!-- Tự động nạp các lần chạy -->
                 </div>
+            </div>
+
+            <!-- MOBILE FIXED BOTTOM CTA BAR (PREDICT PAGE) -->
+            <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0e12]/95 backdrop-blur-2xl border-t border-white/15 p-3 mobile-cta-bar flex items-center gap-2">
+                <button type="button" onclick="resetForm()" class="p-3 rounded-2xl bg-white/10 text-white border border-white/20 active:scale-95 text-xs font-semibold" title="Đặt lại mặc định">
+                    🔄
+                </button>
+                <button type="button" onclick="predict()" class="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-[#e8702a] to-[#f2c14e] text-black font-bold text-xs shadow-lg shadow-[#e8702a]/30 active:scale-95 flex items-center justify-center gap-2">
+                    <span>🎯</span> <span>Nhận diện ngay</span>
+                </button>
             </div>
         </section>
 
@@ -897,8 +1008,8 @@
                                     <span class="flex items-center gap-1 font-bold text-white"><span class="w-2.5 h-2.5 rounded-full bg-red-500 border border-white"></span> 🔴 Mẫu cần đoán</span>
                                 </div>
                             </div>
-                            <div class="relative w-full h-[165px] sm:h-[185px]">
-                                <canvas id="guessChart" class="w-full h-full"></canvas>
+                            <div class="relative w-full h-[200px] sm:h-[220px]">
+                                <canvas id="guessChart" class="w-full h-full touch-none" style="touch-action: none;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -987,6 +1098,16 @@
                     </div>
                 </div>
             </div>
+
+            <!-- MOBILE FIXED BOTTOM CTA BAR (GUESS PAGE) -->
+            <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0e12]/95 backdrop-blur-2xl border-t border-white/15 p-3 mobile-cta-bar flex items-center gap-2">
+                <button type="button" onclick="generateNewGuessSample()" class="p-3 rounded-2xl bg-white/10 text-white border border-white/20 active:scale-95 text-xs font-semibold" title="Tạo mẫu ngẫu nhiên mới">
+                    🎲
+                </button>
+                <button type="button" onclick="checkGuess()" class="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 active:scale-95 flex items-center justify-center gap-2">
+                    <span>⚡</span> <span>Kiểm tra kết quả</span>
+                </button>
+            </div>
         </section>
 
         <!-- ============================================================ -->
@@ -1074,8 +1195,8 @@
                     </div>
                 </div>
 
-                <!-- BẢNG BENCHMARK -->
-                <div class="overflow-x-auto rounded-2xl border border-white/10 mb-8">
+                <!-- BẢNG BENCHMARK (DESKTOP TABLE & MOBILE CARD LIST) -->
+                <div class="hidden md:block overflow-x-auto rounded-2xl border border-white/10 mb-8">
                     <table class="w-full border-collapse min-w-[750px] text-xs">
                         <thead>
                             <tr class="bg-white/[0.06] text-white/70 text-left border-b border-white/10">
@@ -1093,6 +1214,10 @@
                             <!-- Dữ liệu render từ JS -->
                         </tbody>
                     </table>
+                </div>
+                <!-- MOBILE CARDS LIST FOR BENCHMARK -->
+                <div id="benchmarkMobileCards" class="block md:hidden space-y-3 mb-8">
+                    <!-- Dữ liệu render dạng thẻ dọc từ JS -->
                 </div>
 
                 <!-- BIỂU ĐỒ BENCHMARK -->
@@ -1129,7 +1254,8 @@
             </div>
 
             <div class="iris-glass rounded-3xl p-6 sm:p-8">
-                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                <!-- DESKTOP TABLE -->
+                <div class="hidden md:block overflow-x-auto rounded-2xl border border-white/10">
                     <table class="w-full border-collapse min-w-[650px] text-xs">
                         <thead>
                             <tr class="bg-white/[0.06] text-white/70 text-left border-b border-white/10">
@@ -1144,6 +1270,10 @@
                             <!-- Nạp từ JS -->
                         </tbody>
                     </table>
+                </div>
+                <!-- MOBILE CARDS LIST FOR HISTORY -->
+                <div id="historyMobileCards" class="block md:hidden space-y-3">
+                    <!-- Nạp từ JS -->
                 </div>
             </div>
         </section>
@@ -1181,7 +1311,8 @@
                     </div>
                 </div>
 
-                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                <!-- DESKTOP TABLE -->
+                <div class="hidden md:block overflow-x-auto rounded-2xl border border-white/10">
                     <table class="w-full border-collapse min-w-[850px] text-xs">
                         <thead>
                             <tr class="bg-white/[0.06] text-white/70 text-left border-b border-white/10">
@@ -1202,6 +1333,10 @@
                             <!-- Nạp từ JS -->
                         </tbody>
                     </table>
+                </div>
+                <!-- MOBILE CARDS LIST FOR ADMIN EXPERIMENTS -->
+                <div id="adminExperimentsMobileCards" class="block md:hidden space-y-3">
+                    <!-- Nạp từ JS -->
                 </div>
             </div>
         </section>
@@ -1245,7 +1380,8 @@
                     <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                         <span>📈</span> Tần suất sử dụng từng Kernel
                     </h3>
-                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <!-- DESKTOP TABLE -->
+                    <div class="hidden md:block overflow-x-auto rounded-2xl border border-white/10">
                         <table class="w-full border-collapse text-xs">
                             <thead>
                                 <tr class="bg-white/[0.06] text-white/70 text-left border-b border-white/10">
@@ -1258,6 +1394,8 @@
                             <tbody id="statKernelTableBody" class="divide-y divide-white/10"></tbody>
                         </table>
                     </div>
+                    <!-- MOBILE CARDS -->
+                    <div id="statKernelMobileCards" class="block md:hidden space-y-2"></div>
                 </div>
 
                 <!-- DANH SÁCH TÀI KHOẢN -->
@@ -1265,7 +1403,8 @@
                     <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                         <span>👥</span> Danh sách Người dùng (Profiles)
                     </h3>
-                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <!-- DESKTOP TABLE -->
+                    <div class="hidden md:block overflow-x-auto rounded-2xl border border-white/10">
                         <table class="w-full border-collapse text-xs">
                             <thead>
                                 <tr class="bg-white/[0.06] text-white/70 text-left border-b border-white/10">
@@ -1278,6 +1417,8 @@
                             <tbody id="adminUsersTableBody" class="divide-y divide-white/10"></tbody>
                         </table>
                     </div>
+                    <!-- MOBILE CARDS -->
+                    <div id="adminUsersMobileCards" class="block md:hidden space-y-2"></div>
                 </div>
             </div>
         </section>
@@ -1329,9 +1470,9 @@
 
     <!-- MODAL GIỚI THIỆU & HƯỚNG DẪN HỆ THỐNG -->
     <div id="guideBubbleModal" class="fixed inset-0 z-[220] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4 overflow-y-auto" onclick="handleGuideBackdropClick(event)">
-        <div class="w-full max-w-3xl bg-[#101114] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl relative my-8 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div id="guideModalCard" class="w-full max-w-3xl bg-[#101114] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl relative my-8 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
             <!-- HEADER -->
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10 sticky top-0 bg-[#101114]/95 backdrop-blur-md z-10">
+            <div id="guideModalHeader" class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/20 flex items-center justify-center text-lg">✨</div>
                     <div>
@@ -1440,6 +1581,51 @@
             <div class="mt-6 pt-4 border-t border-white/10 flex justify-end">
                 <button type="button" class="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium" onclick="closeAdminUserDetailModal()">
                     Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHI TIẾT LOÀI HOA IRIS (HIỆN KHI BẤM VÀO CARD HOÀNG HÔN BẤT KỲ) -->
+    <div id="flowerDetailModal" class="fixed inset-0 z-[240] hidden items-center justify-center bg-black/85 backdrop-blur-xl p-4 overflow-y-auto" onclick="closeFlowerModal()">
+        <div class="w-full max-w-xl bg-[#121319] border border-white/20 rounded-3xl overflow-hidden shadow-2xl relative my-6" onclick="event.stopPropagation()">
+            <!-- HEADER WITH IMAGE OVERLAY -->
+            <div class="relative h-[220px] sm:h-[260px] w-full bg-black/50">
+                <img id="flowerModalImg" src="/images/setosa.jpg" alt="Iris Detail" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-gradient-to-t from-[#121319] via-black/30 to-transparent"></div>
+                <button type="button" onclick="closeFlowerModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/50 border border-white/30 text-white flex items-center justify-center text-sm backdrop-blur-md hover:bg-black/80 transition-all">✕</button>
+                <div class="absolute bottom-4 left-6 right-6">
+                    <span id="flowerModalBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/40">Setosa</span>
+                    <h3 id="flowerModalTitle" class="font-playfair text-2xl sm:text-3xl text-white mt-1">Iris Setosa</h3>
+                    <p id="flowerModalSub" class="text-xs text-white/70 italic mt-0.5">Bristle-pointed Iris · Diên vĩ mỏ nhọn</p>
+                </div>
+            </div>
+
+            <!-- MODAL BODY -->
+            <div class="p-6 space-y-4 text-xs text-white/80 leading-relaxed max-h-[60vh] overflow-y-auto">
+                <p id="flowerModalDesc" class="text-white/90">Loài hoa dại bản địa...</p>
+
+                <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
+                    <div class="font-bold text-white text-xs flex items-center gap-1.5 uppercase tracking-wide">
+                        <span>🔍</span> Đặc điểm hình thái nổi bật:
+                    </div>
+                    <div id="flowerModalMorphology" class="space-y-1 text-white/75"></div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2 font-mono tabular-nums">
+                    <div class="font-sans font-bold text-white text-xs flex items-center gap-1.5 uppercase tracking-wide">
+                        <span>📏</span> Kích thước số đo chuẩn (R.A. Fisher 1936):
+                    </div>
+                    <div id="flowerModalSpecs" class="space-y-1 text-white/90"></div>
+                </div>
+
+                <div id="flowerModalSvmRole" class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-200 text-xs font-medium"></div>
+            </div>
+
+            <!-- MODAL FOOTER -->
+            <div class="p-4 px-6 border-t border-white/10 flex justify-end bg-white/[0.02]">
+                <button type="button" class="py-2.5 px-6 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all" onclick="closeFlowerModal()">
+                    Đóng cửa sổ
                 </button>
             </div>
         </div>

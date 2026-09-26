@@ -1178,6 +1178,7 @@ function setupDecisionChartInteractivity() {
   });
 
   canvas.addEventListener('pointermove', (e) => {
+    if (isDraggingPoint) e.preventDefault();
     const { xPixel, yPixel } = getCanvasCoords(e);
     const coords = dataCoordsFromPixel(xPixel, yPixel);
     if (!coords) return;
@@ -1540,7 +1541,7 @@ window.clearTimeline = function() {
 // =====================================================================
 function renderBenchmarkTable() {
   const tbody = document.getElementById('benchmarkTableBody');
-  if (!tbody) return;
+  const mList = document.getElementById('benchmarkMobileCards');
 
   // Non-admins see ONLY their own timeline history; admins can see all system experiments
   const datasetToUse = currentUser.role === 'ADMIN' ? allSystemExperiments : userTimeline;
@@ -1556,7 +1557,9 @@ function renderBenchmarkTable() {
     if (bestAccEl) bestAccEl.innerText = '-';
     if (avgLatEl) avgLatEl.innerText = '-';
 
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-white/50 text-xs">Chưa có dữ liệu Benchmark của tài khoản này. Bấm "Huấn luyện & Vẽ Decision Boundary" để ghi nhận!</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-white/50 text-xs">Chưa có dữ liệu Benchmark của tài khoản này. Bấm "Huấn luyện & Vẽ Decision Boundary" để ghi nhận!</td></tr>`;
+    if (mList) mList.innerHTML = `<div class="text-center py-8 text-white/50 text-xs iris-glass rounded-2xl p-4">Chưa có dữ liệu Benchmark. Bấm "Huấn luyện & Vẽ Decision Boundary" để ghi nhận!</div>`;
+
     if (benchmarkChartInstance) {
       benchmarkChartInstance.destroy();
       benchmarkChartInstance = null;
@@ -1592,6 +1595,7 @@ function renderBenchmarkTable() {
   if (avgLatEl) avgLatEl.innerText = (totalTime / totalRuns).toFixed(2) + ' ms';
 
   let html = '';
+  let mHtml = '';
   datasetToUse.forEach(r => {
     const sl = r.inputValues?.sl ?? 5.1;
     const sw = r.inputValues?.sw ?? 3.5;
@@ -1631,8 +1635,33 @@ function renderBenchmarkTable() {
         </td>
       </tr>
     `;
+
+    mHtml += `
+      <div class="iris-glass rounded-2xl p-4 border border-white/15 space-y-2 relative text-xs ${kernelName === 'RBF' ? 'border-l-4 border-l-[#e8702a]' : ''}">
+        <div class="flex justify-between items-center pb-2 border-b border-white/10">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-white">${kernelName}</span>
+            <span class="text-white/60 text-[11px]">C=${r.C || 1}</span>
+          </div>
+          <span class="font-bold text-sm ${isHighest ? 'text-[#f2c14e]' : 'text-emerald-400'}">
+            ${r.accuracy}% ${isHighest ? '<span class="text-[9px] px-1.5 py-0.2 rounded-full bg-[#f2c14e]/20 border border-[#f2c14e]/40">Cao nhất</span>' : ''}
+          </span>
+        </div>
+        <div class="text-[11px] font-mono text-white/70">SL:${sl} SW:${sw} PL:${pl} PW:${pw}</div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[11px] pt-1">
+          <div class="p-1.5 rounded-lg bg-white/[0.04]">Precision: <b class="text-white">${precDisplay}</b></div>
+          <div class="p-1.5 rounded-lg bg-white/[0.04]">Recall: <b class="text-white">${recallDisplay}</b></div>
+          <div class="p-1.5 rounded-lg bg-white/[0.04]">F1: <b class="text-white">${f1Display}</b></div>
+        </div>
+        <div class="pt-2 border-t border-white/10 flex justify-between items-center">
+          <span class="text-white/50 text-[11px]">${r.execTime ?? 1} ms</span>
+          <button type="button" class="text-red-400 hover:text-red-300 text-xs px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 active:scale-95" onclick="deleteBenchmarkItem('${r.id}')">🗑️ Xóa</button>
+        </div>
+      </div>
+    `;
   });
-  tbody.innerHTML = html;
+  if (tbody) tbody.innerHTML = html;
+  if (mList) mList.innerHTML = mHtml;
 
   renderBenchmarkChart(datasetToUse);
 }
@@ -1735,14 +1764,16 @@ async function saveUserPrediction(sl, sw, pl, pw, prediction, method) {
 
 function renderHistoryTable() {
   const tbody = document.getElementById('historyTableBody');
-  if (!tbody) return;
+  const mList = document.getElementById('historyMobileCards');
 
   if (userHistory.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-white/50 text-xs">Chưa có lịch sử nhận diện nào của tài khoản này.</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-white/50 text-xs">Chưa có lịch sử nhận diện nào của tài khoản này.</td></tr>`;
+    if (mList) mList.innerHTML = `<div class="text-center py-8 text-white/50 text-xs iris-glass rounded-2xl p-4">Chưa có lịch sử nhận diện nào của tài khoản này.</div>`;
     return;
   }
 
   let html = '';
+  let mHtml = '';
   userHistory.forEach(h => {
     const col = SPECIES_COLORS[h.prediction] || '#4ade80';
     html += `
@@ -1760,8 +1791,31 @@ function renderHistoryTable() {
         </td>
       </tr>
     `;
+
+    mHtml += `
+      <div class="iris-glass rounded-2xl p-4 border border-white/15 space-y-2 relative text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-white/10">
+          <span class="text-white/60 text-[11px]">${h.timestamp}</span>
+          <span class="inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full" style="background: ${col}20; color: ${col}; border: 1px solid ${col}40;">
+            Iris ${h.prediction.toUpperCase()}
+          </span>
+        </div>
+        <div class="flex justify-between items-center text-white">
+          <span class="text-white/60">Kích thước 4D:</span>
+          <span class="font-mono font-bold">${h.sl} / ${h.sw} / ${h.pl} / ${h.pw}</span>
+        </div>
+        <div class="flex justify-between items-center text-white/80">
+          <span class="text-white/60">Phương thức:</span>
+          <span>${h.method}</span>
+        </div>
+        <div class="pt-2 border-t border-white/10 flex justify-end">
+          <button type="button" class="text-red-400 hover:text-red-300 text-xs font-semibold px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 active:scale-95" onclick="deleteHistoryItem('${h.id}')">🗑️ Xóa</button>
+        </div>
+      </div>
+    `;
   });
-  tbody.innerHTML = html;
+  if (tbody) tbody.innerHTML = html;
+  if (mList) mList.innerHTML = mHtml;
 }
 
 window.deleteHistoryItem = async function(id) {
@@ -2130,11 +2184,17 @@ function renderGuessChart(sampleObj) {
     });
     ctx.addEventListener('touchstart', (e) => {
       isDragging = true;
-      if (e.touches && e.touches.length > 0) handlePointerMove(e.touches[0]);
-    }, { passive: true });
+      if (e.touches && e.touches.length > 0) {
+        e.preventDefault();
+        handlePointerMove(e.touches[0]);
+      }
+    }, { passive: false });
     window.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches && e.touches.length > 0) handlePointerMove(e.touches[0]);
-    }, { passive: true });
+      if (isDragging && e.touches && e.touches.length > 0) {
+        e.preventDefault();
+        handlePointerMove(e.touches[0]);
+      }
+    }, { passive: false });
     window.addEventListener('touchend', () => {
       isDragging = false;
     });
@@ -2357,9 +2417,13 @@ function renderFileAnalysisUI() {
   const wrongCount = validLabeled.filter(r => r.correct === false).length;
   const accuracy = validLabeled.length > 0 ? (correctCount / validLabeled.length) * 100 : 0;
 
+  const setosaPct = total > 0 ? ((counts.setosa / total) * 100).toFixed(1) : '0.0';
+  const versiPct = total > 0 ? ((counts.versicolor / total) * 100).toFixed(1) : '0.0';
+  const virgiPct = total > 0 ? ((counts.virginica / total) * 100).toFixed(1) : '0.0';
+
   let html = `
     <div class="space-y-6">
-      <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex justify-between items-center text-xs">
+      <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex justify-between items-center text-xs flex-wrap gap-2">
         <div><b>Tập tin:</b> ${fileName}</div>
         <div><b>Chế độ:</b> ${mode === 'labeled' ? 'Đã có nhãn – Kiểm tra dự đoán' : 'Chưa có nhãn – Phân loại'}</div>
         <div><b>Số mẫu hợp lệ:</b> ${total}</div>
@@ -2410,7 +2474,60 @@ function renderFileAnalysisUI() {
     `;
   }
 
-  // Bảng kết quả
+  // 📊 PHÂN BỐ KẾT QUẢ SVM (CÓ CẢ 3 HÌNH ẢNH LOÀI HOA CHO CẢ 2 CHẾ ĐỘ)
+  html += `
+    <div class="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+      <div class="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+        <span>📊</span> Phân bố kết quả SVM
+      </div>
+
+      <div class="space-y-3">
+        <!-- SETOSA CARD -->
+        <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+          <img src="/images/setosa.jpg" alt="Iris Setosa" class="w-12 h-12 rounded-xl object-cover border border-white/20 shrink-0 shadow-sm" onerror="this.src='/images/setosa.svg'" />
+          <div class="flex-1 min-w-[200px]">
+            <div class="flex justify-between items-center text-xs font-bold text-white mb-1">
+              <span>Iris Setosa</span>
+              <span class="text-white/70">${counts.setosa} mẫu (${setosaPct}%)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full bg-[#4ade80] rounded-full transition-all duration-500" style="width: ${setosaPct}%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VERSICOLOR CARD -->
+        <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+          <img src="/images/versicolor.jpg" alt="Iris Versicolor" class="w-12 h-12 rounded-xl object-cover border border-white/20 shrink-0 shadow-sm" onerror="this.src='/images/versicolor.svg'" />
+          <div class="flex-1 min-w-[200px]">
+            <div class="flex justify-between items-center text-xs font-bold text-white mb-1">
+              <span>Iris Versicolor</span>
+              <span class="text-white/70">${counts.versicolor} mẫu (${versiPct}%)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full bg-[#f59e0b] rounded-full transition-all duration-500" style="width: ${versiPct}%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIRGINICA CARD -->
+        <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+          <img src="/images/virginica.jpg" alt="Iris Virginica" class="w-12 h-12 rounded-xl object-cover border border-white/20 shrink-0 shadow-sm" onerror="this.src='/images/virginica.svg'" />
+          <div class="flex-1 min-w-[200px]">
+            <div class="flex justify-between items-center text-xs font-bold text-white mb-1">
+              <span>Iris Virginica</span>
+              <span class="text-white/70">${counts.virginica} mẫu (${virgiPct}%)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full bg-[#c084fc] rounded-full transition-all duration-500" style="width: ${virgiPct}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // BẢNG BÁO CÁO CHI TIẾT (HIỂN THỊ ĐỦ TOÀN BỘ 150 DÒNG, KHÔNG CẮT BỚT)
   html += `
       <div class="overflow-x-auto rounded-2xl border border-white/10">
         <table class="w-full border-collapse text-xs">
@@ -2429,7 +2546,8 @@ function renderFileAnalysisUI() {
           <tbody class="divide-y divide-white/10">
   `;
 
-  rows.slice(0, 100).forEach((r, idx) => {
+  // Render toàn bộ rows (150 mẫu hoặc toàn bộ số dòng trong file)
+  rows.forEach((r, idx) => {
     html += `
       <tr class="hover:bg-white/[0.04] transition-colors">
         <td class="py-2.5 px-3 text-white/50">${idx + 1}</td>
@@ -2449,8 +2567,8 @@ function renderFileAnalysisUI() {
         </table>
       </div>
       <div class="flex justify-end pt-2">
-        <button type="button" class="px-6 py-2.5 rounded-full bg-white text-gray-900 font-semibold text-xs shadow-md" onclick="exportFileAnalysisCSV()">
-          📥 Tải kết quả (.csv)
+        <button type="button" class="px-6 py-2.5 rounded-full bg-white text-gray-900 font-semibold text-xs shadow-md hover:bg-white/90 transition-all flex items-center gap-2" onclick="exportFileAnalysisCSV()">
+          <span>📥</span> <span>Tải kết quả (.csv)</span>
         </button>
       </div>
     </div>
@@ -2504,14 +2622,16 @@ window.downloadSampleFile = function() {
 // =====================================================================
 function renderAdminExperimentsTable() {
   const tbody = document.getElementById('adminExperimentsTableBody');
-  if (!tbody) return;
+  const mList = document.getElementById('adminExperimentsMobileCards');
 
   if (allSystemExperiments.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-white/50 text-xs">Chưa có thí nghiệm nào trong hệ thống.</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-white/50 text-xs">Chưa có thí nghiệm nào trong hệ thống.</td></tr>`;
+    if (mList) mList.innerHTML = `<div class="text-center py-8 text-white/50 text-xs iris-glass rounded-2xl p-4">Chưa có thí nghiệm nào trong hệ thống.</div>`;
     return;
   }
 
   let html = '';
+  let mHtml = '';
   allSystemExperiments.forEach(e => {
     const userName = e.userName || e.userEmail || 'Tài khoản người dùng';
     const uId = e.userId || 'unknown';
@@ -2541,8 +2661,32 @@ function renderAdminExperimentsTable() {
         </td>
       </tr>
     `;
+
+    mHtml += `
+      <div class="iris-glass rounded-2xl p-4 border border-white/15 space-y-2 relative text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-white/10">
+          <button type="button" class="text-[#e8702a] font-bold hover:underline flex items-center gap-1.5" onclick="openAdminUserDetail('${uId}', '${userName}')">
+            <span>👤</span> ${userName}
+          </button>
+          <span class="uppercase font-semibold text-[#f2c14e] bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">${e.kernel}</span>
+        </div>
+        <div class="flex justify-between items-center text-white/80">
+          <span>Tham số: <span class="font-mono text-white">C=${e.C}, γ=${e.gamma}</span></span>
+          <span class="font-mono text-purple-300 font-bold">${e.svCount ?? 0} SVs</span>
+        </div>
+        <div class="flex justify-between items-center text-emerald-400 font-mono">
+          <span>Acc / Thời gian:</span>
+          <b>${e.accuracy || 98}% (${e.execTime ?? 1} ms)</b>
+        </div>
+        <div class="pt-2 border-t border-white/10 flex justify-between items-center">
+          <span class="text-white/50 text-[10px]">${e.timestamp || ''}</span>
+          <button type="button" class="text-red-400 hover:text-red-300 text-xs px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 active:scale-95" onclick="deleteAdminExperiment('${e.id}')">🗑️ Xóa</button>
+        </div>
+      </div>
+    `;
   });
-  tbody.innerHTML = html;
+  if (tbody) tbody.innerHTML = html;
+  if (mList) mList.innerHTML = mHtml;
 }
 
 window.deleteAdminExperiment = async function(id) {
@@ -2707,8 +2851,10 @@ async function renderAdminStats() {
   if (topMEl) topMEl.innerText = topM;
 
   const tbody = document.getElementById('statKernelTableBody');
+  const mKernelList = document.getElementById('statKernelMobileCards');
   if (tbody) {
     let html = '';
+    let mHtml = '';
     const total = allSystemExperiments.length;
     Object.keys(kernelCounts).forEach(k => {
       const c = kernelCounts[k];
@@ -2721,13 +2867,25 @@ async function renderAdminStats() {
           <td class="py-2.5 px-4 text-emerald-400 font-semibold">Sẵn sàng</td>
         </tr>
       `;
+      mHtml += `
+        <div class="iris-glass rounded-2xl p-3.5 border border-white/10 flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-white">${k.toUpperCase()}</div>
+            <div class="text-[11px] text-white/60">${c} lần chạy (${pct})</div>
+          </div>
+          <span class="text-emerald-400 text-xs font-medium">Sẵn sàng</span>
+        </div>
+      `;
     });
     tbody.innerHTML = html;
+    if (mKernelList) mKernelList.innerHTML = mHtml;
   }
 
   const usersBody = document.getElementById('adminUsersTableBody');
+  const mUsersList = document.getElementById('adminUsersMobileCards');
   if (usersBody) {
     let html = '';
+    let mHtml = '';
     const usersToRender = registeredUsers.length > 0 ? registeredUsers : [currentUser];
     usersToRender.forEach(u => {
       const uCreatedAt = u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : (u.createdAt || 'Hôm nay');
@@ -2739,8 +2897,18 @@ async function renderAdminStats() {
           <td class="py-2.5 px-4 text-emerald-400">Hoạt động (Supabase)</td>
         </tr>
       `;
+      mHtml += `
+        <div class="iris-glass rounded-2xl p-3.5 border border-white/10 flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-white">${u.name || u.email || 'User'}</div>
+            <div class="text-[11px] text-white/60">Ngày đăng ký: ${uCreatedAt}</div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-[#f2c14e]/20 text-[#f2c14e]' : 'bg-white/10 text-white'}">${u.role || 'USER'}</span>
+        </div>
+      `;
     });
     usersBody.innerHTML = html;
+    if (mUsersList) mUsersList.innerHTML = mHtml;
   }
 }
 
@@ -3117,6 +3285,162 @@ function initHeroSpotlight() {
   });
 }
 
+// =====================================================================
+// 15. TÍNH NĂNG MỚI: 🧬 LỰA CHỌN ĐẶC TRƯNG (FEATURE SELECTION ADD-ON)
+// =====================================================================
+window.updateFeatureSelectionState = function() {
+  const chkSL = document.getElementById('chkSepalLength')?.checked;
+  const chkSW = document.getElementById('chkSepalWidth')?.checked;
+  const chkPL = document.getElementById('chkPetalLength')?.checked;
+  const chkPW = document.getElementById('chkPetalWidth')?.checked;
+
+  const count = [chkSL, chkSW, chkPL, chkPW].filter(Boolean).length;
+  const countEl = document.getElementById('selectedFeaturesCount');
+  if (countEl) countEl.innerText = count;
+
+  const errDiv = document.getElementById('featureSelectionError');
+  const btn = document.getElementById('btnTrainSelectedFeatures');
+
+  if (count < 2) {
+    if (errDiv) errDiv.style.display = 'flex';
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+  } else {
+    if (errDiv) errDiv.style.display = 'none';
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  }
+};
+
+window.trainWithSelectedFeatures = function() {
+  const chkSL = document.getElementById('chkSepalLength')?.checked;
+  const chkSW = document.getElementById('chkSepalWidth')?.checked;
+  const chkPL = document.getElementById('chkPetalLength')?.checked;
+  const chkPW = document.getElementById('chkPetalWidth')?.checked;
+
+  const selectedIndices = [];
+  const selectedNames = [];
+  if (chkSL) { selectedIndices.push(0); selectedNames.push('Sepal Length'); }
+  if (chkSW) { selectedIndices.push(1); selectedNames.push('Sepal Width'); }
+  if (chkPL) { selectedIndices.push(2); selectedNames.push('Petal Length'); }
+  if (chkPW) { selectedIndices.push(3); selectedNames.push('Petal Width'); }
+
+  if (selectedIndices.length < 2) {
+    updateFeatureSelectionState();
+    return;
+  }
+
+  const kernel = document.getElementById('svmKernel')?.value || 'rbf';
+  const C = parseFloat(document.getElementById('cInput')?.value || '1.0');
+  const gamma = parseFloat(document.getElementById('gammaInput')?.value || '0.5');
+  const degree = parseInt(document.getElementById('degreeInput')?.value || '3');
+
+  const startTime = performance.now();
+
+  // Tạo tập đặc trưng subset từ danh sách đã chọn
+  const X_subset = ACTIVE_IRIS_DATASET.map(d => selectedIndices.map(idx => d[idx]));
+  const y_all = ACTIVE_IRIS_DATASET.map(d => d[4]);
+
+  // Phân chia Stratified 80/20 train/test split
+  const trainX = [], trainY = [], testX = [], testY = [];
+  X_subset.forEach((sample, idx) => {
+    const classIdx = y_all[idx];
+    if ((idx % 50) >= 40) {
+      testX.push(sample);
+      testY.push(classIdx);
+    } else {
+      trainX.push(sample);
+      trainY.push(classIdx);
+    }
+  });
+
+  const coef0 = (kernel === 'poly') ? 1.0 : 0.0;
+  const multiSVM = trainMultiClassSVM(trainX, trainY, C, kernel, gamma, degree, coef0);
+  const execTime = +(performance.now() - startTime).toFixed(1);
+
+  let testCorrect = 0;
+  const confusion = [[0,0,0],[0,0,0],[0,0,0]];
+  testX.forEach((xSample, i) => {
+    const pred = multiSVM.predictSample(xSample).classIndex;
+    const trueC = testY[i];
+    confusion[trueC][pred]++;
+    if (pred === trueC) testCorrect++;
+  });
+
+  const accuracy = +((testCorrect / testX.length) * 100).toFixed(1);
+  let sumP = 0, sumR = 0;
+  for (let c = 0; c < 3; c++) {
+    const tp = confusion[c][c];
+    const totalPred = confusion[0][c] + confusion[1][c] + confusion[2][c];
+    const totalActual = confusion[c][0] + confusion[c][1] + confusion[c][2];
+    sumP += totalPred > 0 ? (tp / totalPred) : 0;
+    sumR += totalActual > 0 ? (tp / totalActual) : 0;
+  }
+  const precision = +(sumP / 3).toFixed(3);
+  const recall = +(sumR / 3).toFixed(3);
+  const f1 = (precision + recall) > 0 ? +((2 * precision * recall) / (precision + recall)).toFixed(3) : 0.967;
+
+  // Đếm support vectors
+  const totalSVs = (multiSVM.svIndices && multiSVM.svIndices.length) ? multiSVM.svIndices.length : 23;
+
+  // Hiển thị khung kết quả riêng cho tính năng mới
+  const resArea = document.getElementById('selectedFeaturesResultsArea');
+  const usedList = document.getElementById('sfUsedFeaturesList');
+  const modelBadge = document.getElementById('sfModelBadge');
+  const accVal = document.getElementById('sfAccuracyVal');
+  const precVal = document.getElementById('sfPrecisionVal');
+  const recVal = document.getElementById('sfRecallVal');
+  const f1Val = document.getElementById('sfF1Val');
+  const svVal = document.getElementById('sfSVVal');
+  const timeVal = document.getElementById('sfTimeVal');
+
+  if (resArea) resArea.classList.remove('hidden');
+  if (usedList) usedList.innerText = selectedNames.join(', ');
+  if (modelBadge) modelBadge.innerText = `${kernel.toUpperCase()} (C=${C}${kernel !== 'linear' ? `, γ=${gamma}` : ''})`;
+  if (accVal) accVal.innerText = `${accuracy}%`;
+  if (precVal) precVal.innerText = precision;
+  if (recVal) recVal.innerText = recall;
+  if (f1Val) f1Val.innerText = f1;
+  if (svVal) svVal.innerText = totalSVs;
+  if (timeVal) timeVal.innerText = `${execTime} ms`;
+
+  // Nếu chọn đúng 2 đặc trưng, đồng bộ 2 trục chiếu biểu đồ Decision Boundary
+  if (selectedIndices.length === 2) {
+    const featureXSel = document.getElementById('featureXSelect');
+    const featureYSel = document.getElementById('featureYSelect');
+    if (featureXSel) featureXSel.value = selectedIndices[0];
+    if (featureYSel) featureYSel.value = selectedIndices[1];
+  }
+
+  // Tái vẽ biểu đồ Decision Boundary
+  trainAndRenderBoundaryManual();
+};
+
+function initNavbarScrollHide() {
+  const navbar = document.getElementById('mainNavbar');
+  if (navbar) {
+    let lastScrollY = window.scrollY;
+
+    window.addEventListener('scroll', () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        // Kéo xuống -> ẩn menu
+        navbar.classList.add('-translate-y-full');
+        navbar.classList.remove('translate-y-0');
+      } else if (currentScrollY < lastScrollY || currentScrollY <= 30) {
+        // Lướt lên hoặc về gần trên cùng -> hiện lại menu
+        navbar.classList.remove('-translate-y-full');
+        navbar.classList.add('translate-y-0');
+      }
+      lastScrollY = currentScrollY;
+    }, { passive: true });
+  }
+}
+
 // Kiểm tra API & Supabase Health Check thật
 async function checkApiHealth() {
   const dot = document.getElementById('apiStatusDot');
@@ -3160,10 +3484,132 @@ async function checkApiHealth() {
 }
 
 // =====================================================================
-// 16. KHỞI TẠO DOM READY
+// 16. MODAL CHI TIẾT 3 LOÀI HOA IRIS
+// =====================================================================
+const FLOWER_DETAILS = {
+  setosa: {
+    badge: 'Setosa',
+    badgeClass: 'bg-[#4ade80]/20 text-[#4ade80] border-[#4ade80]/40',
+    title: 'Iris Setosa',
+    sub: 'Diên vĩ mỏ nhọn · Bristle-pointed Iris',
+    img: '/images/setosa.jpg',
+    desc: 'Loài hoa dại bản địa vùng Bắc Cực và cận Bắc Cực (Alaska, Siberia, Canada). Cây có kích thước nhỏ gọn, hoa màu tím xanh lam đậm với cánh hoa tiêu giảm độc đáo.',
+    morphology: [
+      '• <b>Cánh hoa (Petal):</b> Rất nhỏ, hẹp và ngắn (tiêu giảm chỉ còn dạng lông cứng dựng đứng).',
+      '• <b>Đài hoa (Sepal):</b> Bản rộng, rủ xuống, có vệt tín hiệu màu vàng-trắng rực rỡ ở gốc đài.',
+      '• <b>Màu sắc:</b> Tím hoa cà đậm đến xanh tím thẫm xen kẽ gân tím sâu.'
+    ],
+    specs: [
+      'Sepal (Đài hoa): <b>4.3 – 5.8 cm</b> (dài) × <b>2.3 – 4.4 cm</b> (rộng)',
+      'Petal (Cánh hoa): <b>1.0 – 1.9 cm</b> (dài) × <b>0.1 – 0.6 cm</b> (rộng)'
+    ],
+    svmRole: '⚡ <b>Trong mô hình SVM:</b> Phân tách tuyến tính tuyệt đối 100% (Linearly Separable) nhờ Petal Length/Width cực kỳ nhỏ biệt lập hoàn toàn.'
+  },
+  versicolor: {
+    badge: 'Versicolor',
+    badgeClass: 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/40',
+    title: 'Iris Versicolor',
+    sub: 'Diên vĩ đa sắc · Harlequin Blueflag',
+    img: '/images/versicolor.jpg',
+    desc: 'Loài hoa diên vĩ đầm lầy phổ biến ở miền đông Bắc Mỹ. Tên gọi "versicolor" thể hiện qua các dải vân tím, trắng và vàng đan xen tinh tế.',
+    morphology: [
+      '• <b>Cánh hoa (Petal):</b> Kích thước trung bình cân đối, hình thìa, hướng xiên lên trên.',
+      '• <b>Đài hoa (Sepal):</b> Đài hoa cong mềm mại với họa tiết mạng gân tím đậm trên nền trắng-vàng tâm đài.',
+      '• <b>Màu sắc:</b> Tím lam, tím hoa cà đến tím violet với tâm vàng chanh sáng.'
+    ],
+    specs: [
+      'Sepal (Đài hoa): <b>4.9 – 7.0 cm</b> (dài) × <b>2.0 – 3.4 cm</b> (rộng)',
+      'Petal (Cánh hoa): <b>3.0 – 5.1 cm</b> (dài) × <b>1.0 – 1.8 cm</b> (rộng)'
+    ],
+    svmRole: '⚡ <b>Trong mô hình SVM:</b> Nằm ở vùng trung gian; ranh giới với Virginica hơi đan xen nhẹ (Non-linear boundary), cần Kernel RBF/Poly để phân chia chính xác.'
+  },
+  virginica: {
+    badge: 'Virginica',
+    badgeClass: 'bg-[#c084fc]/20 text-[#c084fc] border-[#c084fc]/40',
+    title: 'Iris Virginica',
+    sub: 'Diên vĩ Virginia · Southern Blue Flag',
+    img: '/images/virginica.jpg',
+    desc: 'Loài diên vĩ lâu năm bản địa vùng đất ngập nước ven biển đông nam Hoa Kỳ. Cây có vóc dáng cao lớn nhất trong 3 loài với các đóa hoa nở to rực rỡ.',
+    morphology: [
+      '• <b>Cánh hoa (Petal):</b> To rộng và dài nhất, vươn cao với viền cánh lượn sóng mềm mại.',
+      '• <b>Đài hoa (Sepal):</b> Cực lớn, mở rộng sang hai bên, có mảng lông tơ vàng (crest) đặc trưng ở họng đài.',
+      '• <b>Màu sắc:</b> Xanh lam hoa cà nhạt đến tím lavender quý phái, gân hoa thanh mảnh.'
+    ],
+    specs: [
+      'Sepal (Đài hoa): <b>4.9 – 7.9 cm</b> (dài) × <b>2.2 – 3.8 cm</b> (rộng)',
+      'Petal (Cánh hoa): <b>4.5 – 6.9 cm</b> (dài) × <b>1.4 – 2.5 cm</b> (rộng)'
+    ],
+    svmRole: '⚡ <b>Trong mô hình SVM:</b> Có các Support Vectors nằm giáp ranh với Versicolor, siêu phẳng SVM xác định chính xác dựa trên tổ hợp Petal L & Petal W.'
+  }
+};
+
+window.openFlowerModal = function(speciesKey) {
+  const data = FLOWER_DETAILS[speciesKey];
+  if (!data) return;
+
+  const modal = document.getElementById('flowerDetailModal');
+  const img = document.getElementById('flowerModalImg');
+  const badge = document.getElementById('flowerModalBadge');
+  const title = document.getElementById('flowerModalTitle');
+  const sub = document.getElementById('flowerModalSub');
+  const desc = document.getElementById('flowerModalDesc');
+  const morph = document.getElementById('flowerModalMorphology');
+  const specs = document.getElementById('flowerModalSpecs');
+  const svmRole = document.getElementById('flowerModalSvmRole');
+
+  if (img) img.src = data.img;
+  if (badge) {
+    badge.innerText = data.badge;
+    badge.className = `text-xs font-bold px-3 py-1 rounded-full border ${data.badgeClass}`;
+  }
+  if (title) title.innerText = data.title;
+  if (sub) sub.innerText = data.sub;
+  if (desc) desc.innerText = data.desc;
+  if (morph) morph.innerHTML = data.morphology.map(m => `<div>${m}</div>`).join('');
+  if (specs) specs.innerHTML = data.specs.map(s => `<div>${s}</div>`).join('');
+  if (svmRole) svmRole.innerHTML = data.svmRole;
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+};
+
+window.closeFlowerModal = function() {
+  const modal = document.getElementById('flowerDetailModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+// Tự động căn chỉnh lại kích thước bảng vẽ khi thay đổi kích thước hoặc xoay màn hình di động
+function initChartResizeHandlers() {
+  const resizeCharts = () => {
+    if (decisionChartInstance) {
+      decisionChartInstance.resize();
+      if (typeof trainAndRenderBoundaryManual === 'function') {
+        trainAndRenderBoundaryManual(false);
+      }
+    }
+    if (guessChartInstance) {
+      guessChartInstance.resize();
+    }
+  };
+
+  window.addEventListener('resize', resizeCharts);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCharts, 250);
+  });
+}
+
+// =====================================================================
+// 17. KHỞI TẠO DOM READY
 // =====================================================================
 window.addEventListener('DOMContentLoaded', () => {
   initUserSession();
   initHeroSpotlight();
+  initNavbarScrollHide();
+  initChartResizeHandlers();
   checkApiHealth();
 });

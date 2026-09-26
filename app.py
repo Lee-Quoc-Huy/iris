@@ -36,10 +36,10 @@ if os.path.exists("metrics.json"):
         metrics_data = json.load(f)
 
 class IrisInput(BaseModel):
-    sepal_length: float = Field(..., description="Chiều dài đài hoa (cm)", example=5.1)
-    sepal_width: float = Field(..., description="Chiều rộng đài hoa (cm)", example=3.5)
-    petal_length: float = Field(..., description="Chiều dài cánh hoa (cm)", example=1.4)
-    petal_width: float = Field(..., description="Chiều rộng cánh hoa (cm)", example=0.2)
+    sepal_length: float = Field(..., description="Chiều dài đài hoa (cm)", json_schema_extra={"example": 5.1})
+    sepal_width: float = Field(..., description="Chiều rộng đài hoa (cm)", json_schema_extra={"example": 3.5})
+    petal_length: float = Field(..., description="Chiều dài cánh hoa (cm)", json_schema_extra={"example": 1.4})
+    petal_width: float = Field(..., description="Chiều rộng cánh hoa (cm)", json_schema_extra={"example": 0.2})
     kernel: Literal["linear", "rbf", "poly", "sigmoid"] = "linear"
 
 SPECIES_MAP = {0: "setosa", 1: "versicolor", 2: "virginica"}
