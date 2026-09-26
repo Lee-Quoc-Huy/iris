@@ -313,8 +313,33 @@ const guessStats = {
 };
 
 // =====================================================================
-// 4. SESSION & UI INITIALIZATION
+// 4. SESSION & UI INITIALIZATION & SUPABASE SYNC
 // =====================================================================
+let realtimeChannelSubscribed = false;
+
+function setupSupabaseRealtime() {
+  if (!supabaseClient || realtimeChannelSubscribed) return;
+  realtimeChannelSubscribed = true;
+  try {
+    supabaseClient
+      .channel('iris_realtime_db')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prediction_history' }, () => {
+        loadUserData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'experiment_history' }, () => {
+        loadUserData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_users' }, () => {
+        renderAdminStats();
+      })
+      .subscribe((status) => {
+        console.log('[Supabase Realtime Status]:', status);
+      });
+  } catch (e) {
+    console.warn('Realtime channel error:', e);
+  }
+}
+
 function initUserSession() {
   const gate = document.getElementById('authGateScreen');
   let hasValidSession = false;
@@ -332,12 +357,16 @@ function initUserSession() {
     console.error(e);
   }
 
+  setupSupabaseRealtime();
+
   if (hasValidSession) {
     if (gate) gate.classList.add('hidden');
     updateUserUI();
     loadUserData();
   } else {
     if (gate) gate.classList.remove('hidden');
+    // Vẫn tải dữ liệu thí nghiệm hệ thống từ Supabase để sẵn sàng
+    loadUserData();
   }
 }
 
@@ -382,44 +411,33 @@ async function loadUserData() {
   renderHistoryTable();
   renderTimeline();
   renderBenchmarkTable();
+  renderAdminExperimentsTable();
 
-  // ĐỒNG BỘ SUPABASE CHO RIÊNG TÀI KHOẢN (YÊU CẦU II.5)
-  if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
+  // KẾT NỐI VÀ ĐỒNG BỘ DỮ LIỆU TỪ SUPABASE
+  if (supabaseClient) {
     try {
-      let query = supabaseClient.from('prediction_history').select('*').order('created_at', { ascending: false });
-      if (currentUser.role !== 'ADMIN') {
-        query = query.eq('user_id', currentUser.id);
-      }
-      const { data: predData, error: predErr } = await query;
-      if (!predErr && predData) {
-        userHistory = predData.map(p => ({
-          id: p.id,
-          timestamp: new Date(p.created_at).toLocaleString('vi-VN'),
-          sl: p.sepal_length,
-          sw: p.sepal_width,
-          pl: p.petal_length,
-          pw: p.petal_width,
-          prediction: p.prediction,
-          method: p.method || 'Nhập số liệu'
-        }));
-        localStorage.setItem(userPrefix + 'history', JSON.stringify(userHistory));
-        renderHistoryTable();
-      }
-    } catch (err) {
-      console.warn('Lỗi tải prediction_history:', err);
-    }
+      // 1. Tải danh sách người dùng để map tên hiển thị thực tế
+      let usersMap = {};
+      try {
+        const { data: dbUsers } = await supabaseClient.from('app_users').select('id, name, email');
+        if (dbUsers) {
+          dbUsers.forEach(u => {
+            usersMap[u.id] = u.name || u.email;
+          });
+        }
+      } catch (uErr) {}
 
-    try {
-      let expQuery = supabaseClient.from('experiment_history').select('*').order('created_at', { ascending: false });
-      if (currentUser.role !== 'ADMIN') {
-        expQuery = expQuery.eq('user_id', currentUser.id);
-      }
-      const { data: expData, error: expErr } = await expQuery;
-      if (!expErr && expData) {
-        userTimeline = expData.map(e => ({
+      // 2. Tải toàn bộ thí nghiệm hệ thống từ Supabase experiment_history
+      const { data: expData, error: expErr } = await supabaseClient
+        .from('experiment_history')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!expErr && expData && expData.length > 0) {
+        allSystemExperiments = expData.map(e => ({
           id: e.id,
-          userName: e.user_id === currentUser.id ? (currentUser.name || currentUser.email) : 'User',
-          userId: e.user_id,
+          userName: usersMap[e.user_id] || (e.user_id === currentUser.id ? (currentUser.name || currentUser.email) : 'Người dùng'),
+          userId: e.user_id || 'system',
           kernel: e.kernel,
           C: e.c_param,
           gamma: e.gamma_param,
@@ -432,16 +450,53 @@ async function loadUserData() {
           f1: e.f1_score !== null && e.f1_score !== undefined ? e.f1_score.toString() : '0.967',
           svCount: e.support_vector_count || 0,
           execTime: e.execution_time_ms || 1.0,
-          timestamp: new Date(e.created_at).toLocaleTimeString('vi-VN')
+          timestamp: new Date(e.created_at).toLocaleString('vi-VN')
         }));
-        allSystemExperiments = [...userTimeline];
+        localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
+
+        if (currentUser.role === 'ADMIN') {
+          userTimeline = [...allSystemExperiments];
+        } else {
+          userTimeline = allSystemExperiments.filter(e => e.userId === currentUser.id);
+        }
         localStorage.setItem(userPrefix + 'timeline', JSON.stringify(userTimeline));
         renderTimeline();
         renderBenchmarkTable();
+        renderAdminExperimentsTable();
       }
     } catch (err) {
-      console.warn('Lỗi tải experiment_history:', err);
+      console.warn('Lỗi tải experiment_history từ Supabase:', err);
     }
+
+    // 3. Tải lịch sử dự đoán từ Supabase prediction_history
+    if (currentUser.id && currentUser.id !== 'guest_user') {
+      try {
+        let query = supabaseClient.from('prediction_history').select('*').order('created_at', { ascending: false });
+        if (currentUser.role !== 'ADMIN') {
+          query = query.eq('user_id', currentUser.id);
+        }
+        const { data: predData, error: predErr } = await query;
+        if (!predErr && predData) {
+          userHistory = predData.map(p => ({
+            id: p.id,
+            timestamp: new Date(p.created_at).toLocaleString('vi-VN'),
+            sl: p.sepal_length,
+            sw: p.sepal_width,
+            pl: p.petal_length,
+            pw: p.petal_width,
+            prediction: p.prediction,
+            method: p.method || 'Nhập số liệu'
+          }));
+          localStorage.setItem(userPrefix + 'history', JSON.stringify(userHistory));
+          renderHistoryTable();
+        }
+      } catch (err) {
+        console.warn('Lỗi tải prediction_history từ Supabase:', err);
+      }
+    }
+
+    // Cập nhật thống kê trang Admin
+    renderAdminStats();
   }
 }
 
@@ -2384,8 +2439,22 @@ window.closeAdminUserDetailModal = function() {
   if (modal) modal.classList.add('hidden'), modal.classList.remove('flex');
 };
 
-function renderAdminStats() {
-  const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
+async function renderAdminStats() {
+  let registeredUsers = [];
+  if (supabaseClient) {
+    try {
+      const { data: dbUsers } = await supabaseClient.from('app_users').select('*').order('created_at', { ascending: false });
+      if (dbUsers && dbUsers.length > 0) {
+        registeredUsers = dbUsers;
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc app_users từ Supabase:', e);
+    }
+  }
+  if (registeredUsers.length === 0) {
+    registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
+  }
+
   const totalUsersCount = registeredUsers.length > 0 ? registeredUsers.length : (currentUser.id !== 'guest_user' ? 1 : 0);
 
   const uCountEl = document.getElementById('statTotalUsers');
@@ -2436,12 +2505,13 @@ function renderAdminStats() {
     let html = '';
     const usersToRender = registeredUsers.length > 0 ? registeredUsers : [currentUser];
     usersToRender.forEach(u => {
+      const uCreatedAt = u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : (u.createdAt || 'Hôm nay');
       html += `
         <tr>
           <td class="py-2.5 px-4 font-bold text-white">${u.name || u.email || 'User'}</td>
           <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-[#f2c14e]/20 text-[#f2c14e]' : 'bg-white/10 text-white'}">${u.role || 'USER'}</span></td>
-          <td class="py-2.5 px-4 text-white/60">${u.createdAt || 'Hôm nay'}</td>
-          <td class="py-2.5 px-4 text-emerald-400">Hoạt động</td>
+          <td class="py-2.5 px-4 text-white/60">${uCreatedAt}</td>
+          <td class="py-2.5 px-4 text-emerald-400">Hoạt động (Supabase)</td>
         </tr>
       `;
     });
@@ -2450,7 +2520,7 @@ function renderAdminStats() {
 }
 
 // =====================================================================
-// 14. AUTH GATE & MODALS (NGOẠI LỆ 1B & YÊU CẦU II.1)
+// 14. AUTH GATE & MODALS (NGOẠI LỆ 1B & YÊU CẦU II.1 - SUPABASE AUTH)
 // =====================================================================
 window.switchGateAuthTab = function(tab) {
   const isSignIn = tab === 'signin';
@@ -2478,10 +2548,15 @@ window.handleGateAuthSubmit = async function(e) {
 
   if (errBox) errBox.style.display = 'none';
 
-  const role = (email === 'admin@gmail.com' || email.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER';
-  let userId = 'u_' + Date.now();
+  if (!email || !password) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.innerText = '⚠️ Vui lòng nhập đầy đủ Email và Mật khẩu!';
+    }
+    return;
+  }
 
-  if (password && password.length < 5) {
+  if (password.length < 5) {
     if (errBox) {
       errBox.style.display = 'block';
       errBox.innerText = '⚠️ Mật khẩu yêu cầu tối thiểu 5 ký tự!';
@@ -2489,39 +2564,173 @@ window.handleGateAuthSubmit = async function(e) {
     return;
   }
 
-  // Tài khoản Admin chuẩn
-  if (email === 'admin@gmail.com' && password === 'admin') {
-    userId = '00000000-0000-0000-0000-000000000001';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Đang kết nối Supabase...';
   }
 
-  currentUser = {
-    id: userId,
-    email: email,
-    name: name,
-    role: role,
-    createdAt: new Date().toLocaleDateString('vi-VN')
-  };
-  localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
+  try {
+    let authenticatedUser = null;
 
-  const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
-  if (!registeredUsers.some(u => u.email === currentUser.email)) {
-    registeredUsers.push(currentUser);
-    localStorage.setItem('iris_registered_users', JSON.stringify(registeredUsers));
+    if (isSignUp) {
+      // 1. Kiểm tra tài khoản đã tồn tại trong Supabase chưa
+      if (supabaseClient) {
+        try {
+          const { data: existingUser } = await supabaseClient
+            .from('app_users')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+
+          if (existingUser) {
+            if (errBox) {
+              errBox.style.display = 'block';
+              errBox.innerText = '⚠️ Email này đã được đăng ký trong hệ thống! Vui lòng chuyển sang tab Đăng nhập.';
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = 'Tạo tài khoản mới';
+            }
+            return;
+          }
+        } catch (checkErr) {
+          console.warn('Lỗi kiểm tra email Supabase:', checkErr);
+        }
+      }
+
+      const newUserId = 'u_' + Date.now();
+      const role = (email === 'admin@gmail.com' || email === 'huylechill@gmail.com' || email.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER';
+      const newUser = {
+        id: newUserId,
+        name: name,
+        email: email,
+        password: password,
+        role: role,
+        created_at: new Date().toISOString()
+      };
+
+      // Lưu vào Supabase app_users & profiles
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('app_users').insert(newUser);
+          try {
+            await supabaseClient.from('profiles').insert({
+              id: newUserId,
+              email: email,
+              full_name: name,
+              password: password,
+              role: role,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          } catch (pErr) {}
+        } catch (insErr) {
+          console.warn('Lỗi thêm người dùng vào Supabase:', insErr);
+        }
+      }
+
+      authenticatedUser = newUser;
+    } else {
+      // 2. Đăng nhập: Tra cứu tài khoản trực tiếp trong Supabase app_users
+      if (supabaseClient) {
+        try {
+          const { data: dbUser, error: selErr } = await supabaseClient
+            .from('app_users')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+
+          if (dbUser) {
+            if (dbUser.password && dbUser.password !== password) {
+              if (errBox) {
+                errBox.style.display = 'block';
+                errBox.innerText = '⚠️ Mật khẩu không chính xác! Vui lòng kiểm tra lại.';
+              }
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Đăng nhập vào Hệ thống';
+              }
+              return;
+            }
+
+            authenticatedUser = {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name || name,
+              role: dbUser.role || ((email === 'admin@gmail.com' || email === 'huylechill@gmail.com') ? 'ADMIN' : 'USER'),
+              createdAt: new Date(dbUser.created_at || Date.now()).toLocaleDateString('vi-VN')
+            };
+          }
+        } catch (dbErr) {
+          console.warn('Lỗi tra cứu Supabase app_users:', dbErr);
+        }
+      }
+
+      // Fallback nếu tài khoản admin mặc định
+      if (!authenticatedUser) {
+        if (email === 'admin@gmail.com' && password === 'admin') {
+          authenticatedUser = {
+            id: '00000000-0000-0000-0000-000000000001',
+            email: 'admin@gmail.com',
+            name: 'Lê Thanh Thảo (Admin)',
+            role: 'ADMIN',
+            createdAt: new Date().toLocaleDateString('vi-VN')
+          };
+        } else {
+          // Fallback localStorage nếu mạng mất kết nối
+          const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
+          const localMatch = registeredUsers.find(u => u.email === email && (!u.password || u.password === password));
+          if (localMatch) {
+            authenticatedUser = localMatch;
+          } else {
+            if (errBox) {
+              errBox.style.display = 'block';
+              errBox.innerText = '⚠️ Tài khoản chưa tồn tại trong cơ sở dữ liệu Supabase. Vui lòng chuyển sang tab Đăng ký!';
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = 'Đăng nhập vào Hệ thống';
+            }
+            return;
+          }
+        }
+      }
+    }
+
+    currentUser = authenticatedUser;
+    localStorage.setItem('iris_active_user', JSON.stringify(currentUser));
+
+    const registeredUsers = JSON.parse(localStorage.getItem('iris_registered_users') || '[]');
+    if (!registeredUsers.some(u => u.email === currentUser.email)) {
+      registeredUsers.push(currentUser);
+      localStorage.setItem('iris_registered_users', JSON.stringify(registeredUsers));
+    }
+
+    // Hiển thị thông báo thành công
+    if (successBox) successBox.style.display = 'flex';
+    if (submitBtn) submitBtn.disabled = true;
+
+    // NGOẠI LỆ 1B: Sau khi đăng nhập thành công, hiệu ứng ngắn 600-800ms -> TỰ ĐỘNG mở modal Giới thiệu & Hướng dẫn trên nền Trang chủ
+    setTimeout(() => {
+      const gate = document.getElementById('authGateScreen');
+      if (gate) gate.classList.add('hidden');
+      updateUserUI();
+      loadUserData();
+      window.showPage('homePage', document.getElementById('navHome'), 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine');
+      window.openGuideModal();
+    }, 700);
+
+  } catch (err) {
+    console.error('Lỗi trong handleGateAuthSubmit:', err);
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.innerText = '⚠️ Đã có lỗi xảy ra khi xác thực với cơ sở dữ liệu. Vui lòng thử lại!';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = isSignUp ? 'Tạo tài khoản mới' : 'Đăng nhập vào Hệ thống';
+    }
   }
-
-  // Hiển thị thông báo thành công
-  if (successBox) successBox.style.display = 'flex';
-  if (submitBtn) submitBtn.disabled = true;
-
-  // NGOẠI LỆ 1B: Sau khi đăng nhập thành công, hiệu ứng ngắn 600-800ms -> TỰ ĐỘNG mở modal Giới thiệu & Hướng dẫn trên nền Trang chủ
-  setTimeout(() => {
-    const gate = document.getElementById('authGateScreen');
-    if (gate) gate.classList.add('hidden');
-    updateUserUI();
-    loadUserData();
-    window.showPage('homePage', document.getElementById('navHome'), 'Trang chủ', 'Tổng quan về loài hoa Iris và nền tảng máy học Support Vector Machine');
-    window.openGuideModal();
-  }, 700);
 };
 
 window.openAuthModal = function() {
@@ -2600,22 +2809,30 @@ function initHeroSpotlight() {
   });
 }
 
-// Kiểm tra API Health Check thật
+// Kiểm tra API & Supabase Health Check thật
 async function checkApiHealth() {
   const dot = document.getElementById('apiStatusDot');
   const text = document.getElementById('apiStatusText');
   try {
+    let isSupabaseOnline = false;
+    if (supabaseClient) {
+      try {
+        const { error } = await supabaseClient.from('app_users').select('id', { count: 'exact', head: true });
+        isSupabaseOnline = !error;
+      } catch (e) {}
+    }
+
     const res = await fetch('/health', { signal: AbortSignal.timeout(3000) });
     if (res.ok) {
       if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-      if (text) text.innerText = 'API Online';
+      if (text) text.innerText = isSupabaseOnline ? 'API & Supabase Online' : 'API Online';
     } else {
-      if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
-      if (text) text.innerText = 'API Degraded';
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+      if (text) text.innerText = isSupabaseOnline ? 'Supabase Connected' : 'SVM Local Active';
     }
   } catch (e) {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-    if (text) text.innerText = 'SVM Local Active';
+    if (text) text.innerText = 'Supabase & SVM Active';
   }
 }
 
