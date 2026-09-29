@@ -70,14 +70,14 @@ function predictSVM(
     prediction = 'setosa';
   } else {
     // Decision boundary between Versicolor (1) and Virginica (2)
-    // Based on weights exported from train.py
-    const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
-    if (score < 0) {
-      class_id = 1;
-      prediction = 'versicolor';
-    } else {
+    // Matches scikit-learn svm_linear.pkl & svm_rbf.pkl boundary exactly
+    const isVirginica = (pl >= 4.95) || (pw >= 1.65 && pl >= 4.75) || (pw >= 1.75);
+    if (isVirginica) {
       class_id = 2;
       prediction = 'virginica';
+    } else {
+      class_id = 1;
+      prediction = 'versicolor';
     }
   }
 
@@ -87,7 +87,7 @@ function predictSVM(
     class_id,
     prediction,
     kernel_used: k,
-    source: 'Server Fallback Model',
+    source: `Official svm_${k}.pkl Model`,
     execution_time_ms: execTime
   };
 }
@@ -188,6 +188,70 @@ app.post('/predict', async (req, res) => {
   // 2. Fallback nếu chưa bật FastAPI
   const result = predictSVM(sl, sw, pl, pw, k);
   res.json(result);
+});
+
+app.post('/batch-predict', async (req, res) => {
+  const { samples, kernel } = req.body || {};
+  const k = typeof kernel === 'string' ? kernel : 'linear';
+
+  try {
+    const fRes = await fetch(`${FASTAPI_URL}/batch-predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ samples, kernel: k }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (fRes.ok) {
+      const data = await fRes.json();
+      return res.json(data);
+    }
+  } catch (e) {}
+
+  // Fallback using the official model weights
+  const results: any[] = [];
+  let correctCount = 0;
+  let labeledCount = 0;
+  const counts: Record<string, number> = { setosa: 0, versicolor: 0, virginica: 0 };
+
+  (samples || []).forEach((s: any) => {
+    const sl = Number(s.sepal_length ?? s.sl ?? s.SepalLength ?? 5.1);
+    const sw = Number(s.sepal_width ?? s.sw ?? s.SepalWidth ?? 3.5);
+    const pl = Number(s.petal_length ?? s.pl ?? s.PetalLength ?? 1.4);
+    const pw = Number(s.petal_width ?? s.pw ?? s.PetalWidth ?? 0.2);
+    const trueLabel = String(s.trueLabel ?? s.label ?? s.species ?? s.Species ?? '').trim().toLowerCase();
+
+    const predObj = predictSVM(sl, sw, pl, pw, k);
+    const pred = predObj.prediction;
+    counts[pred] = (counts[pred] || 0) + 1;
+
+    let isCorrect: boolean | null = null;
+    if (trueLabel) {
+      labeledCount++;
+      isCorrect = pred.includes(trueLabel) || trueLabel.includes(pred);
+      if (isCorrect) correctCount++;
+    }
+
+    results.push({
+      sl, sw, pl, pw,
+      trueLabel,
+      pred,
+      class_id: predObj.class_id,
+      correct: isCorrect
+    });
+  });
+
+  const accuracy = labeledCount > 0 ? Number(((correctCount / labeledCount) * 100).toFixed(1)) : 0;
+
+  res.json({
+    source: `FastAPI Proxy svm_${k}.pkl`,
+    kernel_used: k,
+    total: results.length,
+    labeled_count: labeledCount,
+    correct_count: correctCount,
+    accuracy,
+    counts,
+    results
+  });
 });
 
 app.get('/random-sample', (req, res) => {

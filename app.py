@@ -105,13 +105,82 @@ def health():
     }
 
 @app.get("/metrics")
-def get_metrics():
-    if metrics_data:
-        return metrics_data
-    if os.path.exists(metrics_path):
+def get_metrics(kernel: Optional[str] = None):
+    data = metrics_data
+    if not data and os.path.exists(metrics_path):
         with open(metrics_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"error": "Chưa tìm thấy dữ liệu metrics.json. Vui lòng chạy python train.py."}
+            data = json.load(f)
+    if not data:
+        raise HTTPException(status_code=404, detail="Chưa tìm thấy dữ liệu metrics.json. Vui lòng chạy python train.py.")
+
+    if kernel:
+        k = kernel.lower()
+        if k in data:
+            return data[k]
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy metrics cho kernel '{k}'")
+    return data
+
+class BatchIrisInput(BaseModel):
+    samples: list[dict]
+    kernel: Optional[Literal["linear", "rbf", "poly", "sigmoid"]] = "linear"
+
+@app.post("/batch-predict")
+def batch_predict(data: BatchIrisInput):
+    k = (data.kernel or "linear").lower()
+    if k not in models:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Kernel '{k}' không khả dụng. Các kernel đã nạp: {list(models.keys())}"
+        )
+
+    selected_model = models[k]
+    results = []
+    correct_count = 0
+    labeled_count = 0
+    counts = {"setosa": 0, "versicolor": 0, "virginica": 0}
+
+    for s in data.samples:
+        sl = float(s.get("sepal_length") or s.get("sl") or s.get("SepalLength") or 5.1)
+        sw = float(s.get("sepal_width") or s.get("sw") or s.get("SepalWidth") or 3.5)
+        pl = float(s.get("petal_length") or s.get("pl") or s.get("PetalLength") or 1.4)
+        pw = float(s.get("petal_width") or s.get("pw") or s.get("PetalWidth") or 0.2)
+        true_label = str(s.get("trueLabel") or s.get("label") or s.get("species") or s.get("Species") or "").strip().lower()
+
+        features = np.array([[sl, sw, pl, pw]])
+        pred_class = int(selected_model.predict(features)[0])
+        pred_slug = SPECIES_MAP.get(pred_class, "setosa")
+        counts[pred_slug] = counts.get(pred_slug, 0) + 1
+
+        is_correct = None
+        if true_label:
+            labeled_count += 1
+            is_correct = (pred_slug in true_label or true_label in pred_slug)
+            if is_correct:
+                correct_count += 1
+
+        results.append({
+            "sl": sl,
+            "sw": sw,
+            "pl": pl,
+            "pw": pw,
+            "trueLabel": true_label,
+            "pred": pred_slug,
+            "class_id": pred_class,
+            "correct": is_correct
+        })
+
+    accuracy = round((correct_count / labeled_count * 100), 1) if labeled_count > 0 else 0.0
+
+    return {
+        "source": f"FastAPI svm_{k}.pkl (Scikit-learn)",
+        "kernel_used": k,
+        "total": len(results),
+        "labeled_count": labeled_count,
+        "correct_count": correct_count,
+        "accuracy": accuracy,
+        "counts": counts,
+        "results": results
+    }
 
 @app.post("/predict")
 def predict(data: IrisInput):
