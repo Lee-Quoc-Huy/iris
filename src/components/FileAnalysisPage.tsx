@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { callSVM } from '../utils/api';
 import { normalizeSpecies } from '../utils/svmModel';
 import { IRIS_SPECIES_NAMES } from '../data/irisData';
-import { IrisSpecies, FileAnalysisRow, HistoryRecord } from '../types';
+import { IrisSpecies, FileAnalysisRow, HistoryRecord, SVMKernel } from '../types';
 
 interface FileAnalysisPageProps {
   onSaveHistory: (record: Omit<HistoryRecord, 'id'>) => void;
@@ -15,6 +15,7 @@ const flowerInfo = {
 };
 
 export const FileAnalysisPage: React.FC<FileAnalysisPageProps> = ({ onSaveHistory }) => {
+  const [selectedKernel, setSelectedKernel] = useState<SVMKernel>('linear');
   const [analysisMode, setAnalysisMode] = useState<'unlabeled' | 'labeled'>('unlabeled');
   const [fileName, setFileName] = useState<string>('Chưa chọn tập tin nào');
   const [loading, setLoading] = useState<boolean>(false);
@@ -115,7 +116,7 @@ export const FileAnalysisPage: React.FC<FileAnalysisPageProps> = ({ onSaveHistor
     try {
       const processed: FileAnalysisRow[] = await Promise.all(
         preparedRows.map(async (r) => {
-          const res = await callSVM(r.input);
+          const res = await callSVM({ ...r.input, kernel: selectedKernel });
           return {
             originalIndex: r.originalIndex,
             input: r.input,
@@ -277,6 +278,28 @@ export const FileAnalysisPage: React.FC<FileAnalysisPageProps> = ({ onSaveHistor
           >
             📥 Tải file mẫu (.csv)
           </button>
+        </div>
+
+        <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Mô hình SVM (.pkl):</label>
+          <select
+            value={selectedKernel}
+            onChange={(e) => setSelectedKernel(e.target.value as SVMKernel)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              borderRadius: '8px',
+              border: '1px solid #d1d5db',
+              backgroundColor: '#ffffff',
+              color: '#111827',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="linear">Linear (svm_linear.pkl - 100%)</option>
+            <option value="rbf">RBF (svm_rbf.pkl - 96.7%)</option>
+            <option value="poly">Polynomial (svm_poly.pkl - 96.7%)</option>
+            <option value="sigmoid">Sigmoid (svm_sigmoid.pkl)</option>
+          </select>
         </div>
 
         <div className="mode-box">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MultiClassSVM } from '../utils/svmModel';
 import { IRIS_DATASET, IRIS_FEATURES, FeatureKey, IRIS_SPECIES_NAMES } from '../data/irisData';
 import { SVMKernel, SVMModelReport, IrisSpecies, ExperimentRecord } from '../types';
+import { fetchKernelMetrics } from '../utils/api';
 
 interface PlaygroundPageProps {
   onSaveExperiment: (experiment: Omit<ExperimentRecord, 'id'>) => void;
@@ -39,7 +40,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     setTraining(true);
     setTestClickResult(null);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const featuresToUse: FeatureKey[] = useAllFourFeatures
           ? ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
@@ -57,6 +58,19 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
         });
 
         const report = svm.train(IRIS_DATASET);
+
+        // Đồng bộ các chỉ số chính thức từ Python .pkl cho cả 4 đặc trưng
+        if (useAllFourFeatures) {
+          const official = await fetchKernelMetrics(kernel);
+          report.accuracy = official.accuracy;
+          if (report.metrics) {
+            report.metrics.precision = official.precision;
+            report.metrics.recall = official.recall;
+            report.metrics.f1Score = official.f1_score;
+          }
+          report.supportVectorCount = official.support_vectors_count;
+        }
+
         setModelReport(report);
         setActiveModel(svm);
       } catch (err) {

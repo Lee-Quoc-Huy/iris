@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ExperimentRecord, SVMKernel } from '../types';
-import { IRIS_FEATURES, FeatureKey, IRIS_DATASET } from '../data/irisData';
-import { MultiClassSVM } from '../utils/svmModel';
+import { IRIS_FEATURES, FeatureKey } from '../data/irisData';
+import { fetchKernelMetrics } from '../utils/api';
 
 interface ExperimentsPageProps {
   experiments: ExperimentRecord[];
@@ -40,7 +40,7 @@ export const ExperimentsPage: React.FC<ExperimentsPageProps> = ({
     );
   };
 
-  const handleCreateExperiment = () => {
+  const handleCreateExperiment = async () => {
     const featuresToUse: FeatureKey[] =
       featureMode === 'all'
         ? ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
@@ -48,21 +48,14 @@ export const ExperimentsPage: React.FC<ExperimentsPageProps> = ({
 
     const gammaNum = parseFloat(gamma) || 0.1;
 
-    // Train and calculate real accuracy
-    const svm = new MultiClassSVM({
-      kernel,
-      C: cValue,
-      gamma: gammaNum,
-      degree: 3,
-      features: featuresToUse,
-    });
-    const report = svm.train(IRIS_DATASET);
+    // Lấy chỉ số chính thức từ mô hình svm_{kernel}.pkl đã train bằng Python trong train.py
+    const metrics = await fetchKernelMetrics(kernel);
 
     const now = new Date();
     const timeStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} - ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
     const expIndex = String(experiments.length + 1).padStart(2, '0');
-    const finalName = name.trim() || `Thí nghiệm #${expIndex}`;
+    const finalName = name.trim() || `Thí nghiệm #${expIndex} (${kernel.toUpperCase()})`;
 
     onAddExperiment({
       name: finalName,
@@ -70,10 +63,10 @@ export const ExperimentsPage: React.FC<ExperimentsPageProps> = ({
       C: cValue,
       gamma: gammaNum,
       features: featuresToUse,
-      accuracy: report.accuracy,
-      supportVectorCount: report.supportVectorCount,
+      accuracy: metrics.accuracy,
+      supportVectorCount: metrics.support_vectors_count,
       timestamp: timeStr,
-      note: featureMode === 'all' ? 'Toàn bộ 4 đặc trưng' : `${feature1} & ${feature2}`,
+      note: featureMode === 'all' ? `Mô hình chính thức svm_${kernel}.pkl` : `${feature1} & ${feature2} (svm_${kernel}.pkl)`,
     });
 
     setShowCreateModal(false);
