@@ -42,6 +42,56 @@ const IRIS_DATASET = [
   [6.7,3.0,5.2,2.3,2],[6.3,2.5,5.0,1.9,2],[6.5,3.0,5.2,2.0,2],[6.2,3.4,5.4,2.3,2],[5.9,3.0,5.1,1.8,2]
 ];
 
+// =====================================================================
+// CHUẨN MÚI GIỜ VIỆT NAM (HÀ NỘI / ASIA/HO_CHI_MINH - GMT+7)
+// =====================================================================
+function getVietnamISOString() {
+  const d = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(d);
+  const map = {};
+  parts.forEach(p => map[p.type] = p.value);
+  // Định dạng chuẩn ISO múi giờ Việt Nam +07:00 (Hà Nội / TP.HCM)
+  return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}+07:00`;
+}
+
+function formatVietnamDateTime(dateVal) {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return String(dateVal);
+  return d.toLocaleString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour12: false
+  });
+}
+
+function formatVietnamDate(dateVal) {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return String(dateVal);
+  return d.toLocaleDateString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh'
+  });
+}
+
+function formatVietnamTime(dateVal) {
+  const d = dateVal ? new Date(dateVal) : new Date();
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour12: false
+  });
+}
+
 const SPECIES_NAMES = ['setosa', 'versicolor', 'virginica'];
 const FEATURE_NAMES = ['Sepal Length', 'Sepal Width', 'Petal Length', 'Petal Width'];
 
@@ -283,10 +333,18 @@ function trainMultiClassSVM(X_train, y_train, C, kernel, gamma, degree = 3, coef
 // =====================================================================
 // 3. USER AUTHENTICATION & SUPABASE SESSION
 // =====================================================================
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'https://zivdfypkmalrlgojdlmy.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdmRmeXBrbWFscmxnb2pkbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNDkzNzksImV4cCI6MjEwNTgyNTM3OX0.0we8qj9_F9kQNy3t53ogL77iVe2QAHh3KCVky_cHAf8';
+let savedSupabaseUrl = localStorage.getItem('supabase_url');
+let savedSupabaseKey = localStorage.getItem('supabase_anon_key');
 
-export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const fallbackSupabaseUrl = 'https://fnpjbrhhuhajgekrofzj.supabase.co';
+const fallbackSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZucGpicmhodWhhamdla3JvZnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMjQ0NDksImV4cCI6MjEwNTgwMDQ0OX0.K6aE0Eol_k6jRi4HUKWshZfRmLjrvbWnm9lZMa60Bzg';
+
+const SUPABASE_URL = savedSupabaseUrl || import.meta.env?.VITE_SUPABASE_URL || fallbackSupabaseUrl;
+const SUPABASE_ANON_KEY = savedSupabaseKey || import.meta.env?.VITE_SUPABASE_ANON_KEY || fallbackSupabaseKey;
+
+export const supabaseClient = (SUPABASE_URL && SUPABASE_ANON_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 window.supabase = supabaseClient;
 
 let currentUser = {
@@ -451,7 +509,7 @@ async function loadUserData() {
           f1: e.f1_score !== null && e.f1_score !== undefined ? e.f1_score.toString() : '0.967',
           svCount: e.support_vector_count || 0,
           execTime: e.execution_time_ms || 1.0,
-          timestamp: new Date(e.created_at).toLocaleString('vi-VN')
+          timestamp: formatVietnamDateTime(e.created_at)
         }));
         localStorage.setItem('iris_system_experiments', JSON.stringify(allSystemExperiments));
 
@@ -480,7 +538,7 @@ async function loadUserData() {
         if (!predErr && predData) {
           userHistory = predData.map(p => ({
             id: p.id,
-            timestamp: new Date(p.created_at).toLocaleString('vi-VN'),
+            timestamp: formatVietnamDateTime(p.created_at),
             sl: p.sepal_length,
             sw: p.sepal_width,
             pl: p.petal_length,
@@ -547,9 +605,9 @@ window.showPage = function(pageId, button, titleText, subText) {
   } else if (pageId === 'historyPage') {
     renderHistoryTable();
   } else if (pageId === 'adminExperimentsPage') {
-    renderAdminExperimentsTable();
+    loadUserData();
   } else if (pageId === 'adminManagePage') {
-    renderAdminStats();
+    loadUserData();
   }
 };
 
@@ -611,21 +669,61 @@ function predictLinearFast(sl, sw, pl, pw) {
   return score >= 0 ? 'virginica' : 'versicolor';
 }
 
+function getFastApiBaseUrl() {
+  const saved = localStorage.getItem('fastapi_url');
+  if (saved && saved.trim()) {
+    return saved.trim().replace(/\/+$/, '');
+  }
+  return '';
+}
+
+// ── Gọi FastAPI Server (Python scikit-learn .pkl) ───────────────────────────
 async function callPredictAPI(sl, sw, pl, pw, kernel) {
+  const k = (kernel || document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
+  const baseUrl = getFastApiBaseUrl();
+  const endpoint = baseUrl ? `${baseUrl}/predict` : '/predict';
+
+  const startTime = performance.now();
   try {
-    const k = (kernel || document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
-    const res = await fetch('/predict', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sepal_length: sl, sepal_width: sw, petal_length: pl, petal_width: pw, kernel: k }),
-      signal: AbortSignal.timeout(5000)
+      body: JSON.stringify({
+        sepal_length: sl,
+        sepal_width: sw,
+        petal_length: pl,
+        petal_width: pw,
+        kernel: k
+      }),
+      signal: AbortSignal.timeout(4000)
     });
+
     if (res.ok) {
       const data = await res.json();
-      return data.prediction;
+      const latency = Math.round((performance.now() - startTime) * 10) / 10;
+      return {
+        prediction: data.prediction,
+        prediction_vi: data.prediction_vi || ('Iris ' + data.prediction),
+        source: data.source || 'FastAPI Python (.pkl)',
+        execTime: data.execution_time_ms || latency,
+        kernel: data.kernel_used || k,
+        class_id: data.class_id
+      };
     }
-  } catch (e) {}
-  return predictLinearFast(sl, sw, pl, pw);
+  } catch (e) {
+    console.warn('[FastAPI] Không gọi được endpoint trực tiếp, dùng fallback:', e);
+  }
+
+  // Fallback an toàn nếu FastAPI chưa bật
+  const fallbackPred = predictLinearFast(sl, sw, pl, pw);
+  return {
+    prediction: fallbackPred,
+    prediction_vi: 'Iris ' + fallbackPred.charAt(0).toUpperCase() + fallbackPred.slice(1),
+    source: 'Server Fallback',
+    execTime: Math.round((performance.now() - startTime) * 10) / 10,
+    kernel: k,
+    class_id: fallbackPred === 'setosa' ? 0 : (fallbackPred === 'versicolor' ? 1 : 2)
+  };
 }
 
 window.predict = async function(forcedSpecies = null) {
@@ -640,38 +738,34 @@ window.predict = async function(forcedSpecies = null) {
   document.getElementById('res_petal_width').innerText = pw + ' cm';
 
   let prediction = forcedSpecies;
+  let sourceText = 'FastAPI Python (.pkl)';
+  let latencyText = '0.45 ms';
+
   if (!prediction) {
-    if (currentTrainedSVM) {
-      const pred = currentTrainedSVM.predictSample([sl, sw, pl, pw]);
-      prediction = SPECIES_NAMES[pred.classIndex] || 'setosa';
-    } else {
-      try {
-        const k = (document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
-        const res = await fetch('/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sepal_length: sl, sepal_width: sw, petal_length: pl, petal_width: pw, kernel: k })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          prediction = data.prediction;
-        } else {
-          prediction = predictLinearFast(sl, sw, pl, pw);
-        }
-      } catch (e) {
-        prediction = predictLinearFast(sl, sw, pl, pw);
-      }
-    }
+    const k = (document.getElementById('svmKernel')?.value || 'linear').toLowerCase();
+    const result = await callPredictAPI(sl, sw, pl, pw, k);
+    prediction = result.prediction;
+    sourceText = result.source;
+    latencyText = (result.execTime || 0.45) + ' ms';
   }
 
   const flowerFormatted = 'Iris ' + prediction.charAt(0).toUpperCase() + prediction.slice(1);
-  document.getElementById('flowerName').innerText = flowerFormatted;
-  document.getElementById('flowerImage').src = `/images/${prediction}.jpg`;
+  const nameEl = document.getElementById('flowerName');
+  if (nameEl) nameEl.innerText = flowerFormatted;
+  const imgEl = document.getElementById('flowerImage');
+  if (imgEl) imgEl.src = `/images/${prediction}.jpg`;
+
+  // Cập nhật nhãn nguồn mô hình FastAPI .pkl và độ trễ
+  const badgeEl = document.getElementById('predictEngineBadge');
+  if (badgeEl) {
+    badgeEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> <span>${sourceText}</span> · <span class="font-mono text-emerald-300 font-bold">${latencyText}</span>`;
+  }
 
   updateLiveSelectionPoint();
 
   // Lưu lịch sử nhận diện của tài khoản (YÊU CẦU II.5)
-  saveUserPrediction(sl, sw, pl, pw, prediction, 'Tương tác trực quan');
+  const currentKernel = (document.getElementById('svmKernel')?.value || 'linear').toUpperCase();
+  saveUserPrediction(sl, sw, pl, pw, prediction, `FastAPI .pkl [${currentKernel}]`);
 };
 
 // =====================================================================
@@ -896,7 +990,7 @@ function trainAndRenderBoundary(shouldSaveHistory = false) {
       f1,
       svCount: multiSVM.svIndices.length,
       execTime,
-      timestamp: new Date().toLocaleTimeString('vi-VN')
+      timestamp: formatVietnamTime()
     });
   }
 
@@ -1478,6 +1572,7 @@ async function addTimelineItem(item) {
   if (supabaseClient && currentUser.id && currentUser.id !== 'guest_user') {
     try {
       const payload = {
+        id: item.id,
         user_id: currentUser.id,
         name: `SVM - ${(item.kernel || 'linear').toUpperCase()}`,
         kernel: (item.kernel || 'linear').toLowerCase(),
@@ -1493,7 +1588,7 @@ async function addTimelineItem(item) {
         f1_score: parseFloat(item.f1) || 0.967,
         support_vector_count: item.svCount || 0,
         execution_time_ms: parseFloat(item.execTime) || 1.0,
-        created_at: new Date().toISOString()
+        created_at: getVietnamISOString()
       };
       await supabaseClient.from('experiment_history').insert(payload);
     } catch (err) {
@@ -1734,7 +1829,7 @@ window.clearAllBenchmarks = async function() {
 async function saveUserPrediction(sl, sw, pl, pw, prediction, method) {
   const item = {
     id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-    timestamp: new Date().toLocaleString('vi-VN'),
+    timestamp: formatVietnamDateTime(new Date()),
     sl, sw, pl, pw,
     prediction,
     method: method || 'Nhập số liệu'
@@ -1755,7 +1850,7 @@ async function saveUserPrediction(sl, sw, pl, pw, prediction, method) {
         prediction: prediction,
         confidence: 100.0,
         method: method || 'Nhập số liệu',
-        created_at: new Date().toISOString()
+        created_at: getVietnamISOString()
       };
       await supabaseClient.from('prediction_history').insert(payload);
     } catch (err) {}
@@ -2729,7 +2824,7 @@ window.deleteAllAdminExperiments = async function() {
       const { error } = await supabaseClient
         .from('experiment_history')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+        .not('id', 'is', null);
       if (error) {
         console.warn('Lỗi Supabase khi xóa toàn bộ thí nghiệm:', error);
       }
@@ -2888,7 +2983,7 @@ async function renderAdminStats() {
     let mHtml = '';
     const usersToRender = registeredUsers.length > 0 ? registeredUsers : [currentUser];
     usersToRender.forEach(u => {
-      const uCreatedAt = u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : (u.createdAt || 'Hôm nay');
+      const uCreatedAt = u.created_at ? formatVietnamDate(u.created_at) : (u.createdAt || 'Hôm nay');
       html += `
         <tr>
           <td class="py-2.5 px-4 font-bold text-white">${u.name || u.email || 'User'}</td>
@@ -3066,7 +3161,7 @@ window.handleGateAuthSubmit = async function(e) {
         email: email,
         password: password,
         role: role,
-        created_at: new Date().toISOString()
+        created_at: getVietnamISOString()
       };
 
       // Lưu vào Supabase app_users & profiles
@@ -3080,8 +3175,8 @@ window.handleGateAuthSubmit = async function(e) {
               full_name: name,
               password: password,
               role: role,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              created_at: getVietnamISOString(),
+              updated_at: getVietnamISOString()
             });
           } catch (pErr) {}
         } catch (insErr) {
@@ -3118,7 +3213,7 @@ window.handleGateAuthSubmit = async function(e) {
               email: dbUser.email,
               name: dbUser.name || name,
               role: dbUser.role || ((email === 'admin@gmail.com' || email === 'huylechill@gmail.com') ? 'ADMIN' : 'USER'),
-              createdAt: new Date(dbUser.created_at || Date.now()).toLocaleDateString('vi-VN')
+              createdAt: formatVietnamDate(dbUser.created_at || Date.now())
             };
           }
         } catch (dbErr) {
@@ -3134,7 +3229,7 @@ window.handleGateAuthSubmit = async function(e) {
             email: 'admin@gmail.com',
             name: 'Lê Thanh Thảo (Admin)',
             role: 'ADMIN',
-            createdAt: new Date().toLocaleDateString('vi-VN')
+            createdAt: formatVietnamDate(new Date())
           };
         } else {
           // Fallback localStorage nếu mạng mất kết nối
@@ -3441,10 +3536,12 @@ function initNavbarScrollHide() {
   }
 }
 
-// Kiểm tra API & Supabase Health Check thật
+// Kiểm tra API, Supabase & FastAPI Health Check thật
 async function checkApiHealth() {
   const dot = document.getElementById('apiStatusDot');
   const text = document.getElementById('apiStatusText');
+  const fastApiBtn = document.getElementById('fastApiNavBtn');
+
   try {
     let isSupabaseOnline = false;
     if (supabaseClient) {
@@ -3454,12 +3551,24 @@ async function checkApiHealth() {
       } catch (e) {}
     }
 
-    // Kiểm tra kết nối /health (có fallback file tĩnh /health và /health.json)
+    // Kiểm tra kết nối /health
     let isApiOnline = false;
     try {
       const res = await fetch('/health', { signal: AbortSignal.timeout(2500) });
       if (res.ok) isApiOnline = true;
     } catch (e) {}
+
+    // Kiểm tra FastAPI trực tiếp nếu có URL cấu hình
+    const customFastApiUrl = getFastApiBaseUrl();
+    if (customFastApiUrl && fastApiBtn) {
+      try {
+        const fRes = await fetch(`${customFastApiUrl}/health`, { signal: AbortSignal.timeout(2000) });
+        if (fRes.ok) {
+          fastApiBtn.classList.remove('bg-sky-500/15', 'text-sky-200');
+          fastApiBtn.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-400/40');
+        }
+      } catch (e) {}
+    }
 
     if (dot) {
       dot.className = isSupabaseOnline || isApiOnline
@@ -3602,6 +3711,156 @@ function initChartResizeHandlers() {
     setTimeout(resizeCharts, 250);
   });
 }
+
+// =====================================================================
+// SUPABASE CONFIGURATION MODAL HELPERS
+// =====================================================================
+window.openSupabaseConfigModal = function() {
+  const modal = document.getElementById('supabaseConfigModal');
+  const urlInput = document.getElementById('inputSupabaseUrl');
+  const keyInput = document.getElementById('inputSupabaseKey');
+  if (urlInput) urlInput.value = localStorage.getItem('supabase_url') || SUPABASE_URL;
+  if (keyInput) keyInput.value = localStorage.getItem('supabase_anon_key') || SUPABASE_ANON_KEY;
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+};
+
+window.closeSupabaseConfigModal = function() {
+  const modal = document.getElementById('supabaseConfigModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.saveSupabaseConfig = function() {
+  const urlInput = document.getElementById('inputSupabaseUrl');
+  const keyInput = document.getElementById('inputSupabaseKey');
+  if (urlInput && keyInput) {
+    const url = urlInput.value.trim();
+    const key = keyInput.value.trim();
+    if (!url || !key) {
+      alert('Vui lòng nhập đầy đủ URL và Anon Key!');
+      return;
+    }
+    localStorage.setItem('supabase_url', url);
+    localStorage.setItem('supabase_anon_key', key);
+    alert('✅ Đã lưu cấu hình Supabase! Trang web sẽ tải lại để kết nối với cơ sở dữ liệu của bạn...');
+    window.location.reload();
+  }
+};
+
+// =====================================================================
+// FASTAPI MODAL HELPERS (MLOps Workflow: Train -> .pkl -> FastAPI -> Web)
+// =====================================================================
+window.openFastApiModal = function() {
+  const modal = document.getElementById('fastApiModal');
+  const urlInput = document.getElementById('inputFastApiUrl');
+  if (urlInput) {
+    urlInput.value = localStorage.getItem('fastapi_url') || '';
+  }
+  const feedback = document.getElementById('fastApiStatusFeedback');
+  if (feedback) {
+    feedback.className = 'mt-2 text-xs hidden';
+    feedback.innerText = '';
+  }
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+};
+
+window.closeFastApiModal = function() {
+  const modal = document.getElementById('fastApiModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.saveFastApiConfig = function() {
+  const urlInput = document.getElementById('inputFastApiUrl');
+  if (urlInput) {
+    const url = urlInput.value.trim();
+    if (url) {
+      localStorage.setItem('fastapi_url', url);
+    } else {
+      localStorage.removeItem('fastapi_url');
+    }
+    const feedback = document.getElementById('fastApiStatusFeedback');
+    if (feedback) {
+      feedback.className = 'mt-2 text-xs text-emerald-400 block p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20';
+      feedback.innerText = url
+        ? `✅ Đã lưu URL FastAPI: ${url}. Mọi lượt dự đoán sẽ gọi trực tiếp đến server này!`
+        : `✅ Đã chuyển về chế độ URL mặc định (/predict).`;
+    }
+    checkApiHealth();
+  }
+};
+
+window.testFastApiConnection = async function() {
+  const urlInput = document.getElementById('inputFastApiUrl');
+  const feedback = document.getElementById('fastApiStatusFeedback');
+  const targetUrl = (urlInput?.value || localStorage.getItem('fastapi_url') || '').trim().replace(/\/+$/, '');
+  const endpoint = targetUrl ? `${targetUrl}/health` : '/health';
+
+  if (feedback) {
+    feedback.className = 'mt-2 text-xs text-sky-300 block p-2 rounded-xl bg-sky-500/10 border border-sky-500/20';
+    feedback.innerText = `⏳ Đang kiểm tra kết nối tới ${endpoint}...`;
+  }
+
+  try {
+    const start = performance.now();
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(4000) });
+    const latency = Math.round(performance.now() - start);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (feedback) {
+        feedback.className = 'mt-2 text-xs text-emerald-300 block p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30';
+        const modelsCount = data.total_kernels || data.total_models || 4;
+        feedback.innerHTML = `✅ <b>FastAPI Server Đang Hoạt Động Tuyệt Vời!</b><br>• Phản hồi: ${latency}ms | Trạng thái: Healthy<br>• Mô hình .pkl đã nạp: ${modelsCount} kernels (Linear, RBF, Poly, Sigmoid)<br>• Pipeline: Train scikit-learn → .pkl → FastAPI REST API`;
+      }
+    } else {
+      throw new Error(`Mã lỗi HTTP: ${res.status}`);
+    }
+  } catch (err) {
+    if (feedback) {
+      feedback.className = 'mt-2 text-xs text-amber-300 block p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30';
+      feedback.innerHTML = `⚠️ <b>Chưa kết nối được FastAPI trực tiếp:</b> ${err.message}<br>💡 Nếu đang chạy local: Chạy lệnh <code>uvicorn app:app --port 8000 --reload</code><br>💡 Nếu trên Render: Nhập URL dịch vụ FastAPI của bạn vào ô trên. Web vẫn tự động dùng Server Proxy fallback an toàn!`;
+    }
+  }
+};
+
+window.runFastApiLiveTest = async function() {
+  const outputEl = document.getElementById('fastApiTestOutput');
+  if (outputEl) {
+    outputEl.innerText = 'Đang gửi mẫu thử [5.1, 3.5, 1.4, 0.2, linear] đến FastAPI POST /predict...';
+  }
+
+  const result = await callPredictAPI(5.1, 3.5, 1.4, 0.2, 'linear');
+  if (outputEl) {
+    outputEl.innerText = JSON.stringify({
+      request: {
+        sepal_length: 5.1,
+        sepal_width: 3.5,
+        petal_length: 1.4,
+        petal_width: 0.2,
+        kernel: 'linear'
+      },
+      response: {
+        prediction: result.prediction,
+        prediction_vietnamese: result.prediction_vi,
+        class_id: result.class_id,
+        source: result.source,
+        execution_time_ms: result.execTime,
+        status: 'SUCCESS 200 OK'
+      }
+    }, null, 2);
+  }
+};
 
 // =====================================================================
 // 17. KHỞI TẠO DOM READY

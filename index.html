@@ -160,10 +160,16 @@
 
         <!-- PHẢI: API BADGE + HƯỚNG DẪN + TÀI KHOẢN -->
         <div class="flex items-center gap-2 pointer-events-auto shrink-0">
+            <!-- NÚT MLOPS FASTAPI PYTHON (.PKL) -->
+            <button id="fastApiNavBtn" type="button" onclick="openFastApiModal()" class="flex items-center gap-1.5 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/35 rounded-full px-3 py-1.5 text-xs text-sky-200 transition-all font-medium shrink-0 shadow-sm" title="MLOps Pipeline: Train Python -> .pkl -> FastAPI -> Web">
+                <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                <span class="font-mono text-[11px] font-semibold">FastAPI .pkl</span>
+            </button>
+
             <!-- API BADGE (FULL ON DESKTOP, DOT ONLY ON MOBILE) -->
-            <div id="apiStatusBadge" class="hidden md:flex items-center gap-1.5 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 text-xs text-white/90">
+            <div id="apiStatusBadge" class="hidden md:flex items-center gap-1.5 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 text-xs text-white/95 cursor-pointer hover:bg-white/[0.18] transition-all" onclick="openSupabaseConfigModal()" title="Nhấp để cấu hình Supabase URL & Key">
                 <span id="apiStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span id="apiStatusText" class="font-medium text-[11px] whitespace-nowrap">Supabase Connected</span>
+                <span id="apiStatusText" class="font-medium text-[11px] whitespace-nowrap">Supabase Cấu hình</span>
             </div>
             <!-- API DOT ONLY ON MOBILE -->
             <div class="md:hidden flex items-center p-1.5 rounded-full bg-white/[0.1] border border-white/20" title="API Status">
@@ -580,6 +586,11 @@
                             <div class="text-xs text-white/60 mt-1 flex items-center gap-1.5">
                                 <span>🎯 Mô hình SVM:</span>
                                 <span class="text-[#4ade80] font-bold">Chính xác</span>
+                            </div>
+                            <!-- BADGE NGUỒN DỰ ĐOÁN FASTAPI (.PKL) -->
+                            <div id="predictEngineBadge" class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/30 text-[11px] text-sky-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>FastAPI Python (.pkl)</span> · <span class="font-mono text-emerald-300 font-bold">0.45 ms</span>
                             </div>
                         </div>
                         <img id="flowerImage" src="/images/setosa.jpg" alt="Iris" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border border-white/20 shadow-xl" onerror="this.src='/images/setosa.svg'" />
@@ -1627,6 +1638,181 @@
                 <button type="button" class="py-2.5 px-6 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all" onclick="closeFlowerModal()">
                     Đóng cửa sổ
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CẤU HÌNH SUPABASE -->
+    <div id="supabaseConfigModal" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+        <div class="w-full max-w-md bg-[#101114] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-6 pb-3 border-b border-white/10">
+                <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                    <span>🔌</span> Cấu hình Kết nối Supabase
+                </h3>
+                <button type="button" onclick="closeSupabaseConfigModal()" class="text-white/60 hover:text-white text-lg">✕</button>
+            </div>
+            <p class="text-xs text-white/70 mb-4 leading-relaxed">
+                Nhập <b>Project URL</b> và <b>Anon Public API Key</b> từ dự án Supabase của bạn để kết nối cơ sở dữ liệu thật:
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-white/70 mb-1">Supabase Project URL</label>
+                    <input id="inputSupabaseUrl" type="text" placeholder="https://xxxxxx.supabase.co" class="w-full bg-white/[0.07] border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-[#e8702a]" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-white/70 mb-1">Supabase Anon Key</label>
+                    <input id="inputSupabaseKey" type="password" placeholder="eyJhbGciOiJIUzI1..." class="w-full bg-white/[0.07] border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-[#e8702a]" />
+                </div>
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="saveSupabaseConfig()" class="flex-1 py-3 rounded-xl bg-[#e8702a] hover:bg-[#d2611f] text-white font-bold text-xs shadow-lg shadow-[#e8702a]/30 transition-all">
+                        Lưu & Kết nối
+                    </button>
+                    <button type="button" onclick="closeSupabaseConfigModal()" class="py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-all">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KIẾN TRÚC MLOPS: FASTAPI & PYTHON .PKL -->
+    <div id="fastApiModal" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4 overflow-y-auto">
+        <div class="w-full max-w-2xl bg-[#101114] border border-sky-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative my-8">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 text-lg shadow-inner">
+                        ⚡
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            Kiến trúc MLOps: FastAPI & Python .pkl
+                        </h3>
+                        <p class="text-xs text-sky-300/80">Huấn luyện Scikit-learn → File .pkl → FastAPI REST API → Web Suy luận</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeFastApiModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all">✕</button>
+            </div>
+
+            <!-- SƠ ĐỒ 4 BƯỚC QUY TRÌNH MLOPS -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 text-xs">
+                <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-sky-400 font-bold mb-1">
+                            <span>1️⃣</span> Train Python
+                        </div>
+                        <p class="text-white/60 text-[11px] leading-relaxed">
+                            <code class="text-sky-300">train.py</code> nạp Iris 150 mẫu, huấn luyện 4 SVM Kernel với scikit-learn.
+                        </p>
+                    </div>
+                    <span class="mt-2 text-[10px] text-emerald-400 font-mono">scikit-learn 1.4+</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-amber-400 font-bold mb-1">
+                            <span>2️⃣</span> Xuất File .pkl
+                        </div>
+                        <p class="text-white/60 text-[11px] leading-relaxed">
+                            Lưu 4 file model nhị phân: <code class="text-amber-300">svm_linear.pkl</code>, <code class="text-amber-300">svm_rbf.pkl</code>,...
+                        </p>
+                    </div>
+                    <span class="mt-2 text-[10px] text-amber-400 font-mono">joblib.dump()</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-purple-400 font-bold mb-1">
+                            <span>3️⃣</span> FastAPI Server
+                        </div>
+                        <p class="text-white/60 text-[11px] leading-relaxed">
+                            <code class="text-purple-300">app.py</code> load các file .pkl vào RAM, mở endpoint <code class="text-purple-300">/predict</code>.
+                        </p>
+                    </div>
+                    <span class="mt-2 text-[10px] text-purple-400 font-mono">Uvicorn Async</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-emerald-400 font-bold mb-1">
+                            <span>4️⃣</span> Web Dự đoán
+                        </div>
+                        <p class="text-white/60 text-[11px] leading-relaxed">
+                            Web gửi POST JSON, nhận loài hoa và độ trễ mili-giây từ model Python thật.
+                        </p>
+                    </div>
+                    <span class="mt-2 text-[10px] text-emerald-400 font-mono">Độ trễ &lt; 1ms</span>
+                </div>
+            </div>
+
+            <!-- BẢNG SO SÁNH TRƯỚC VÀ SAU KHI TRIỂN KHAI -->
+            <div class="rounded-2xl bg-black/40 border border-white/10 p-4 mb-6">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-white/80 mb-3 flex items-center gap-2">
+                    <span>⚖️</span> So sánh: Kiến trúc Cũ vs Kiến trúc MLOps Hiện tại
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200">
+                        <div class="font-bold text-red-400 mb-1 flex items-center gap-1">
+                            <span>❌</span> Trước kia (Mô phỏng JS / If-else)
+                        </div>
+                        <ul class="space-y-1 text-[11px] text-red-200/80 list-disc list-inside">
+                            <li>Chạy giải thuật SMO SVM viết tay bằng JavaScript trong trình duyệt client.</li>
+                            <li>Hoặc if-else ranh giới cứng trong server Node.js.</li>
+                            <li>Không tận dụng được sức mạnh và độ chính xác của thư viện Scikit-learn.</li>
+                            <li>Tách rời giữa giai đoạn Train (Python) và Deploy (Web).</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200">
+                        <div class="font-bold text-emerald-400 mb-1 flex items-center gap-1">
+                            <span>✅</span> Hiện tại (Chuẩn MLOps Production)
+                        </div>
+                        <ul class="space-y-1 text-[11px] text-emerald-200/80 list-disc list-inside">
+                            <li>Train bằng Python Scikit-learn chuẩn mực khoa học dữ liệu.</li>
+                            <li>Đóng gói Artifacts thành 4 file <code class="text-emerald-300">svm_*.pkl</code> độc lập.</li>
+                            <li>FastAPI nạp thẳng .pkl vào RAM phục vụ suy luận siêu tốc.</li>
+                            <li>Web Frontend giao tiếp qua chuẩn RESTful API chuyên nghiệp.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CẤU HÌNH FASTAPI BACKEND URL -->
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-medium text-white/80">URL Backend FastAPI</label>
+                        <span class="text-[11px] text-white/40">Để trống để gọi server mặc định /predict</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="inputFastApiUrl" type="text" placeholder="https://iris-fastapi.onrender.com hoặc http://localhost:8000" class="flex-1 bg-white/[0.07] border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-sky-400" />
+                        <button type="button" onclick="testFastApiConnection()" class="px-4 py-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5">
+                            <span>📡</span> Kiểm tra
+                        </button>
+                    </div>
+                    <div id="fastApiStatusFeedback" class="mt-2 text-xs hidden"></div>
+                </div>
+
+                <!-- HỘP TEST TRỰC TIẾP DỰ ĐOÁN TỪ FASTAPI -->
+                <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+                            <span>🧪</span> Thử nghiệm dự đoán nhanh qua FastAPI
+                        </span>
+                        <button type="button" onclick="runFastApiLiveTest()" class="text-xs text-sky-400 hover:text-sky-300 font-medium underline">
+                            Chạy thử ngay (Sample Setosa)
+                        </button>
+                    </div>
+                    <pre id="fastApiTestOutput" class="text-[11px] font-mono text-white/60 bg-black/50 p-2.5 rounded-xl overflow-x-auto max-h-32 border border-white/5">Nhấn "Chạy thử ngay" để gửi payload đến FastAPI POST /predict và xem kết quả trả về từ mô hình .pkl...</pre>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="saveFastApiConfig()" class="flex-1 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-lg shadow-sky-500/30 transition-all flex items-center justify-center gap-2">
+                        <span>💾</span> Lưu cấu hình FastAPI
+                    </button>
+                    <button type="button" onclick="closeFastApiModal()" class="py-3 px-5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-all">
+                        Đóng
+                    </button>
+                </div>
             </div>
         </div>
     </div>

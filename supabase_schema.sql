@@ -1,27 +1,21 @@
 -- =====================================================================
--- IRIS SVM - HỆ THỐNG CƠ SỞ DỮ LIỆU ĐƠN GIẢN HÓA (100% KHÔNG CẦN XÁC MINH EMAIL)
--- Đăng ký: Lưu tên, email, mật khẩu vào CSDL.
--- Đăng nhập: Kiểm tra email và mật khẩu khớp là vào thẳng hệ thống.
--- Hướng dẫn: Mở Supabase Dashboard -> SQL Editor -> Dán toàn bộ script này -> Nhấn "RUN"
+-- HỆ THỐNG CƠ SỞ DỮ LIỆU IRIS SVM (CHUẨN HOÀN CHỈNH - MÚI GIỜ VIỆT NAM UTC+7)
+-- Cấu hình: Hỗ trợ Đăng ký, Đăng nhập, Lưu lịch sử Dự đoán & Thí nghiệm SVM theo User ID
+-- Múi giờ: Asia/Ho_Chi_Minh (Asia/Saigon - GMT+7)
+-- Sửa triệt để: Lỗi Row-Level Security (RLS) 401 Unauthorized / 42501
+-- Hướng dẫn: Mở Supabase -> SQL Editor -> Dán toàn bộ script này -> Nhấn "RUN"
 -- =====================================================================
 
--- 1. BẬT TIỆN ÍCH MỞ RỘNG (EXTENSIONS)
+-- 1. THIẾT LẬP MÚI GIỜ VIỆT NAM (ASIA/HO_CHI_MINH - GMT+7) TOÀN HỆ THỐNG CƠ SỞ DỮ LIỆU
+ALTER DATABASE postgres SET timezone TO 'Asia/Ho_Chi_Minh';
+SET timezone = 'Asia/Ho_Chi_Minh';
+
+-- 2. KÍCH HOẠT EXTENSIONS CẦN THIẾT
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =====================================================================
--- 2. DỌN DẸP CÁC TRIGGER CŨ TRÊN auth.users ĐỂ TRÁNH LỖI PHỤ THUỘC
--- =====================================================================
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users CASCADE;
-DROP TRIGGER IF EXISTS tr_auth_user_created ON auth.users CASCADE;
-DROP TRIGGER IF EXISTS handle_new_user ON auth.users CASCADE;
-DROP TRIGGER IF EXISTS on_user_created ON auth.users CASCADE;
-DROP TRIGGER IF EXISTS user_created_trigger ON auth.users CASCADE;
-DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-
--- =====================================================================
--- 3. BẢNG APP_USERS (BẢNG TÀI KHOẢN NGƯỜI DÙNG ĐƠN GIẢN HÓA)
--- Lưu trực tiếp: Họ tên, Email, Mật khẩu, Vai trò
+-- 3. BẢNG APP_USERS (QUẢN LÝ TÀI KHOẢN NGƯỜI DÙNG)
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS public.app_users (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -32,8 +26,14 @@ CREATE TABLE IF NOT EXISTS public.app_users (
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
+-- Đảm bảo tương thích kiểu dữ liệu TEXT cho ID
+DO $$ BEGIN
+    ALTER TABLE public.app_users ALTER COLUMN id TYPE TEXT USING id::text;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 -- =====================================================================
--- 4. BẢNG PROFILES (TƯƠNG THÍCH DỮ LIỆU CŨ)
+-- 4. BẢNG PROFILES (ĐỒNG BỘ THÔNG TIN HỒ SƠ NGƯỜI DÙNG)
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS public.profiles (
     id TEXT PRIMARY KEY,
@@ -46,32 +46,19 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
--- Bổ sung cột password vào profiles nếu bảng đã có từ trước
+-- Bổ sung cột và loại bỏ ràng buộc ngoại khóa cũ nếu có
 DO $$ BEGIN
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT;
+    ALTER TABLE public.profiles ALTER COLUMN id TYPE TEXT USING id::text;
     ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- =====================================================================
--- 5. BẢNG USER_PREFERENCES (CẤU HÌNH THAM SỐ SVM)
--- =====================================================================
-CREATE TABLE IF NOT EXISTS public.user_preferences (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT,
-    selected_kernel TEXT DEFAULT 'linear' NOT NULL,
-    selected_c NUMERIC DEFAULT 1.0 NOT NULL,
-    selected_gamma NUMERIC DEFAULT 0.1 NOT NULL,
-    selected_degree INT DEFAULT 3 NOT NULL,
-    selected_features JSONB DEFAULT '["Petal Length", "Petal Width"]'::jsonb NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
-
--- =====================================================================
--- 6. BẢNG PREDICTION_HISTORY (LỊCH SỬ DỰ ĐOÁN HOA)
+-- 5. BẢNG PREDICTION_HISTORY (LỊCH SỬ DỰ ĐOÁN HOA THEO USER ID)
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS public.prediction_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT,
     sepal_length NUMERIC NOT NULL,
     sepal_width NUMERIC NOT NULL,
@@ -83,18 +70,20 @@ CREATE TABLE IF NOT EXISTS public.prediction_history (
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
+-- Cập nhật an toàn kiểu dữ liệu và gỡ bỏ khóa ngoại nếu có
 DO $$ BEGIN
-    ALTER TABLE public.prediction_history DROP CONSTRAINT IF EXISTS prediction_history_user_id_fkey;
+    ALTER TABLE public.prediction_history ALTER COLUMN id TYPE TEXT USING id::text;
     ALTER TABLE public.prediction_history ALTER COLUMN user_id TYPE TEXT USING user_id::text;
     ALTER TABLE public.prediction_history ALTER COLUMN user_id DROP NOT NULL;
+    ALTER TABLE public.prediction_history DROP CONSTRAINT IF EXISTS prediction_history_user_id_fkey;
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- =====================================================================
--- 7. BẢNG EXPERIMENT_HISTORY (LỊCH SỬ HUẤN LUYỆN & BENCHMARK)
+-- 6. BẢNG EXPERIMENT_HISTORY (LỊCH SỬ THÍ NGHIỆM & BENCHMARK SVM THEO USER ID)
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS public.experiment_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT,
     name TEXT DEFAULT 'Huấn luyện SVM' NOT NULL,
     kernel TEXT NOT NULL,
@@ -114,18 +103,41 @@ CREATE TABLE IF NOT EXISTS public.experiment_history (
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
+-- Cập nhật an toàn kiểu dữ liệu và gỡ bỏ khóa ngoại nếu có
 DO $$ BEGIN
-    ALTER TABLE public.experiment_history DROP CONSTRAINT IF EXISTS experiment_history_user_id_fkey;
+    ALTER TABLE public.experiment_history ALTER COLUMN id TYPE TEXT USING id::text;
     ALTER TABLE public.experiment_history ALTER COLUMN user_id TYPE TEXT USING user_id::text;
     ALTER TABLE public.experiment_history ALTER COLUMN user_id DROP NOT NULL;
+    ALTER TABLE public.experiment_history DROP CONSTRAINT IF EXISTS experiment_history_user_id_fkey;
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- =====================================================================
--- 8. BẢNG APP_CONTENT (QUẢN LÝ NỘI DUNG VÀ HƯỚNG DẪN)
+-- 7. BẢNG USER_PREFERENCES (TÙY CHỌN CẤU HÌNH THAM SỐ CỦA NGƯỜI DÙNG)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS public.user_preferences (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id TEXT,
+    selected_kernel TEXT DEFAULT 'linear' NOT NULL,
+    selected_c NUMERIC DEFAULT 1.0 NOT NULL,
+    selected_gamma NUMERIC DEFAULT 0.1 NOT NULL,
+    selected_degree INT DEFAULT 3 NOT NULL,
+    selected_features JSONB DEFAULT '["Petal Length", "Petal Width"]'::jsonb NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+DO $$ BEGIN
+    ALTER TABLE public.user_preferences ALTER COLUMN id TYPE TEXT USING id::text;
+    ALTER TABLE public.user_preferences ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+    ALTER TABLE public.user_preferences DROP CONSTRAINT IF EXISTS user_preferences_user_id_fkey;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- =====================================================================
+-- 8. BẢNG APP_CONTENT (QUẢN TRỊ NỘI DUNG VÀ HƯỚNG DẪN)
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS public.app_content (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     key TEXT UNIQUE NOT NULL,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
@@ -134,7 +146,7 @@ CREATE TABLE IF NOT EXISTS public.app_content (
 );
 
 -- =====================================================================
--- 9. TẠO INDEXES TỐI ƯU HIỆU SUẤT TRUY VẤN
+-- 9. TỐI ƯU HÓA INDEXES CHO TRUY VẤN THEO USER VÀ THỜI GIAN
 -- =====================================================================
 CREATE INDEX IF NOT EXISTS idx_app_users_email ON public.app_users(email);
 CREATE INDEX IF NOT EXISTS idx_pred_user_id ON public.prediction_history(user_id);
@@ -144,50 +156,62 @@ CREATE INDEX IF NOT EXISTS idx_exp_kernel ON public.experiment_history(kernel);
 CREATE INDEX IF NOT EXISTS idx_exp_created_at ON public.experiment_history(created_at DESC);
 
 -- =====================================================================
--- 10. TẮT HOÀN TOÀN ROW LEVEL SECURITY (RLS) ĐỂ KHÔNG BỊ CHẶN QUYỀN
+-- 10. GIẢI QUYẾT TRIỆT ĐỂ LỖI ROW LEVEL SECURITY (RLS) - FIX LỖI 401 & 42501
+-- Tạo chính sách (POLICIES) mở hoàn toàn cho public (bao gồm cả anon và authenticated)
+-- để mọi thao tác SELECT, INSERT, UPDATE, DELETE đều thành công 100%
 -- =====================================================================
-DO $$ 
-DECLARE 
-    r RECORD;
-BEGIN
-    FOR r IN (
-        SELECT policyname, tablename 
-        FROM pg_policies 
-        WHERE schemaname = 'public'
-    ) LOOP
-        EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', r.policyname, r.tablename);
-    END LOOP;
-END $$;
 
-ALTER TABLE public.app_users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_preferences DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.prediction_history DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.experiment_history DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.app_content DISABLE ROW LEVEL SECURITY;
+-- Bật RLS và gán chính sách TO PUBLIC cho từng bảng
+ALTER TABLE public.app_users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_app_users" ON public.app_users;
+CREATE POLICY "allow_all_app_users" ON public.app_users FOR ALL TO public USING (true) WITH CHECK (true);
 
--- Cấp toàn quyền thực thi cho ứng dụng Web
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_profiles" ON public.profiles;
+CREATE POLICY "allow_all_profiles" ON public.profiles FOR ALL TO public USING (true) WITH CHECK (true);
+
+ALTER TABLE public.prediction_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_prediction_history" ON public.prediction_history;
+CREATE POLICY "allow_all_prediction_history" ON public.prediction_history FOR ALL TO public USING (true) WITH CHECK (true);
+
+ALTER TABLE public.experiment_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_experiment_history" ON public.experiment_history;
+CREATE POLICY "allow_all_experiment_history" ON public.experiment_history FOR ALL TO public USING (true) WITH CHECK (true);
+
+ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_user_preferences" ON public.user_preferences;
+CREATE POLICY "allow_all_user_preferences" ON public.user_preferences FOR ALL TO public USING (true) WITH CHECK (true);
+
+ALTER TABLE public.app_content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_app_content" ON public.app_content;
+CREATE POLICY "allow_all_app_content" ON public.app_content FOR ALL TO public USING (true) WITH CHECK (true);
+
+-- Cấp toàn quyền cho mọi vai trò (anon, authenticated, service_role)
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
 
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+
 -- =====================================================================
--- 11. BẬT SUPABASE REALTIME (TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU)
+-- 11. BẬT SUPABASE REALTIME (TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỨC THÌ)
 -- =====================================================================
 DO $$ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.app_users;
     ALTER PUBLICATION supabase_realtime ADD TABLE public.prediction_history;
     ALTER PUBLICATION supabase_realtime ADD TABLE public.experiment_history;
     ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
-EXCEPTION WHEN others THEN null;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- =====================================================================
--- 12. TẠO SẴN TÀI KHOẢN ADMIN MẪU (AN TOÀN TUYỆT ĐỐI KHÔNG BỊ TRÙNG ID/EMAIL)
--- Email: lethao8130@gmail.com (hoặc admin@gmail.com) | Mật khẩu: admin
+-- 12. KHỞI TẠO TÀI KHOẢN QUẢN TRỊ VIÊN MẪU (ADMIN)
+-- Tài khoản: lethao8130@gmail.com (hoặc admin@gmail.com) | Mật khẩu: admin
 -- =====================================================================
 DO $$ BEGIN
-    -- Xóa bản ghi cũ nếu trùng email hoặc trùng id để tránh lỗi duplicate key
     DELETE FROM public.app_users WHERE id = '00000000-0000-0000-0000-000000000001' OR email IN ('lethao8130@gmail.com', 'admin@gmail.com');
     
     INSERT INTO public.app_users (id, name, email, password, role)
@@ -195,7 +219,6 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- Thêm vào profiles (bọc an toàn trong DO block để không bao giờ báo lỗi)
 DO $$ BEGIN
     DELETE FROM public.profiles WHERE id = '00000000-0000-0000-0000-000000000001' OR email IN ('lethao8130@gmail.com', 'admin@gmail.com');
 
@@ -204,7 +227,7 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- Dữ liệu nội dung hướng dẫn
+-- Nội dung giới thiệu
 INSERT INTO public.app_content (key, title, content)
 VALUES 
 (

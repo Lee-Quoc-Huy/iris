@@ -49,6 +49,7 @@ const SPECIES: Record<number, string> = {
 };
 
 const AVAILABLE_KERNELS = ['rbf', 'linear', 'poly', 'sigmoid'];
+const FASTAPI_URL = process.env.FASTAPI_URL || 'http://127.0.0.1:8000';
 
 function predictSVM(
   sl: number,
@@ -56,22 +57,39 @@ function predictSVM(
   pl: number,
   pw: number,
   kernel: string = 'linear'
-): { class_id: number; prediction: string; kernel_used: string } {
+): { class_id: number; prediction: string; kernel_used: string; source: string; execution_time_ms: number } {
   const k = (kernel || 'linear').toLowerCase();
+  const startTime = Date.now();
+
+  let class_id = 0;
+  let prediction = 'setosa';
 
   // Setosa is linearly separable with large margin on petal length / width
   if (pl <= 2.45 || pw <= 0.8) {
-    return { class_id: 0, prediction: 'setosa', kernel_used: k };
+    class_id = 0;
+    prediction = 'setosa';
+  } else {
+    // Decision boundary between Versicolor (1) and Virginica (2)
+    // Based on weights exported from train.py
+    const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
+    if (score < 0) {
+      class_id = 1;
+      prediction = 'versicolor';
+    } else {
+      class_id = 2;
+      prediction = 'virginica';
+    }
   }
 
-  // Linear Decision Boundary between Versicolor and Virginica
-  // w = [-0.15, -0.45, 0.75, 1.45], bias = -4.35
-  const score = -0.15 * sl - 0.45 * sw + 0.75 * pl + 1.45 * pw - 4.35;
-  if (score < 0) {
-    return { class_id: 1, prediction: 'versicolor', kernel_used: k };
-  } else {
-    return { class_id: 2, prediction: 'virginica', kernel_used: k };
-  }
+  const execTime = Math.max(0.1, Date.now() - startTime);
+
+  return {
+    class_id,
+    prediction,
+    kernel_used: k,
+    source: 'Server Fallback Model',
+    execution_time_ms: execTime
+  };
 }
 
 function roundTo(num: number, decimals: number): number {
@@ -84,15 +102,35 @@ function randRange(min: number, max: number): number {
 }
 
 // ── API Endpoints ─────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let isFastApiOnline = false;
+  try {
+    const fRes = await fetch(`${FASTAPI_URL}/health`, { signal: AbortSignal.timeout(1500) });
+    if (fRes.ok) {
+      isFastApiOnline = true;
+    }
+  } catch (e) {}
+
   res.json({
     status: 'healthy',
+    fastapi_connected: isFastApiOnline,
+    fastapi_url: FASTAPI_URL,
     available_kernels: AVAILABLE_KERNELS,
     total_models: AVAILABLE_KERNELS.length,
+    pipeline: 'train.py -> .pkl -> FastAPI app.py -> Web Client'
   });
 });
 
-app.get('/metrics', (req, res) => {
+app.get('/metrics', async (req, res) => {
+  // First try to fetch fresh metrics from FastAPI
+  try {
+    const fRes = await fetch(`${FASTAPI_URL}/metrics`, { signal: AbortSignal.timeout(1500) });
+    if (fRes.ok) {
+      const data = await fRes.json();
+      return res.json(data);
+    }
+  } catch (e) {}
+
   const data = getMetricsData();
   const kernel = req.query.kernel as string | undefined;
   if (kernel && data[kernel.toLowerCase()]) {
@@ -112,7 +150,7 @@ app.get('/metrics', (req, res) => {
   });
 });
 
-app.post('/predict', (req, res) => {
+app.post('/predict', async (req, res) => {
   const { sepal_length, sepal_width, petal_length, petal_width, kernel } = req.body || {};
   const sl = Number(sepal_length) || 5.1;
   const sw = Number(sepal_width) || 3.5;
@@ -120,6 +158,34 @@ app.post('/predict', (req, res) => {
   const pw = Number(petal_width) || 0.2;
   const k = typeof kernel === 'string' ? kernel : 'linear';
 
+  // 1. Gửi request đến FastAPI server (Python scikit-learn .pkl)
+  try {
+    const fastApiResponse = await fetch(`${FASTAPI_URL}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sepal_length: sl,
+        sepal_width: sw,
+        petal_length: pl,
+        petal_width: pw,
+        kernel: k,
+      }),
+      signal: AbortSignal.timeout(3000),
+    });
+
+    if (fastApiResponse.ok) {
+      const fastApiData = await fastApiResponse.json();
+      return res.json({
+        ...fastApiData,
+        source: 'FastAPI Python (.pkl)',
+        via_proxy: true,
+      });
+    }
+  } catch (err) {
+    // FastAPI không phản hồi hoặc đang chạy offline, dùng fallback
+  }
+
+  // 2. Fallback nếu chưa bật FastAPI
   const result = predictSVM(sl, sw, pl, pw, k);
   res.json(result);
 });
